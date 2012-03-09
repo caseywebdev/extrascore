@@ -46,7 +46,7 @@ if not Extrascore? and jQuery? and _? and _.str?
       , opt
       str = str+''
       str = str.toLowerCase() if opt.downcase
-      str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, '') if opt.alphanumeric
+      str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
       _.chain(str).clean().replace //g, opt.delimiter
     
     # Sort an object by key for iteration
