@@ -44,58 +44,27 @@ if not Extrascore? and jQuery? and _? and _.str?
         alphanumeric: true
         downcase: true
       , opt
-      str = str+""
+      str = str+''
       str = str.toLowerCase() if opt.downcase
       str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, '') if opt.alphanumeric
-      _(str.replace(/\s+/g, ' ').strip().replace /\s+/g, opt.delimiter
+      _.chain(str).clean().replace //g, opt.delimiter
     
+    # Sort an object by key for iteration
+    sortByKey: (obj) ->
+      newObj = {}
+      _.chain(obj)
+        .map (val, key) -> [key, val]
+        .sortBy (val) -> val[0]
+        .each (val) -> newObj[val[0]] = val[1]
+      newObj
     
-  ###
-    @abortXhr: ->
-      for k, v of @
-        v?.abortXhr?()
-    @Util: class
-      @init: ->
-        #extend jQuery with some handy functions
-        $.prettyUrl = (s, delimiter = "-") ->
-          $.trim(s.toLowerCase().replace(/[\W_]/g, ' ').replace(/\s+/g, ' ')).replace /\s+/g, delimiter
-        $.escapeHtml = (s, quotes, query) ->
-          s = $('<div/>').text(s).html()
-          s = s.replace(/"/g, '&quot;').replace /'/g, '&#039;' if quotes
-          s = s.replace ' ', '+' if query
-          s
-        $.unescapeHtml = (s) ->
-          $("<div/>").html(s).text()
-        $.sortByKey = (o) ->
-          if typeof o isnt "object"
-            return o
-          copy = []
-          for k, v of o
-            copy.push k: k, v: v
-          o = {}
-          copy.sort (a, b) -> if a.k < b.k then -1 else 1
-          for v in copy
-            o[v.k] = v.v
-          o
-        $.sortWithKey = (o, fn) ->
-          if typeof o isnt "object"
-            return o
-          copy = []
-          for k, v of o
-            copy.push k: k, v: v
-          o = {}
-          copy.sort fn
-          for v in copy
-            o[v.k] = v.v
-          o
-        $.scrollTo = $.fn.scrollTo = (tar = 0, duration, callback) ->
-          if tar instanceof jQuery
-            val = tar.offset().top
-          else if not isNaN parseInt tar
-            val = tar
-          else
-            val = $(tar).offset().top
-          $(if @ instanceof jQuery then @ else if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
+    # A quick zip to the top of the page, or optionally to a jQuery object specified by `tar`
+    scrollTo: (val = 0, duration, callback) ->
+      if val instanceof $
+        val = val.offset().top
+      $(if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
+    
+    ###
     @Placeholder: class
       @locked: false
       @load: ->
