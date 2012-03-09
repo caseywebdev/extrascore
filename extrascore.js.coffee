@@ -1,12 +1,12 @@
 ###! Extrascore (requires jQuery, Underscore and Underscore.string) by Casey Foster (caseywebdev.com) ###
 
-# Check dependencies.
+# Check dependencies
 if not Extrascore? and jQuery? and _? and _.str?
   
-  # Don't define Extrascore twice.
+  # Don't define Extrascore twice
   window.Extrascore = true
   
-  # Use the jQuery shortcut.
+  # Use the jQuery shortcut
   $ = jQuery
   
   # Mixin Underscore.string
@@ -14,24 +14,30 @@ if not Extrascore? and jQuery? and _? and _.str?
   
   # Extend via _.mixin(object)
   _.mixin
+    
+    # Mass method call for every child of obj
     mass: (obj, str) ->
       for key, val of obj
         val?[str]?()
-      obj
+        
+    # Initialize an object by calling init on children and then assigning the load method to jQuery's DOM ready call
     init: (obj) ->
       obj.mass "init"
       $ _(obj).load
-      obj
+      
+    # Call on jQuery's DOM ready call
     load: (obj) ->
       obj.method "init"
       _(obj).dom()
       $('body').on 'DomSubtreeModified', -> _(obj).dom if not obj.domLocked
-      obj
+      
+    # Call on every DOMSubtreeModified event (use carefully)
     dom: (obj) ->
       obj.domLocked = true
       obj.mass 'dom'
       obj.domLocked = false
-      obj
+    
+    # Simplify a string for use in a URL or query
     simplify: (str, opt={}) ->
       opt = _.extend
         delimiter: ' '
@@ -41,17 +47,9 @@ if not Extrascore? and jQuery? and _? and _.str?
       str = str+""
       str = str.toLowerCase() if opt.downcase
       str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, '') if opt.alphanumeric
-      str.replace(/\s+/g, ' ').strip.replace(/\s+/g, o[:delimiter])
-      
-       def self.simplify s, o={}
-    o.reverse_merge!  delimiter: ' ',
-                      alphanumeric: true,
-                      downcase: true
-    s = s.to_s
-    s = s.downcase if o[:downcase]
-    s = s.gsub(/[^\w\s-]/, '').gsub(/[-_]/, ' ') if o[:alphanumeric]
-    s.gsub(/\s+/, ' ').strip.gsub(/\s+/, o[:delimiter])
-  end
+      _(str.replace(/\s+/g, ' ').strip().replace /\s+/g, opt.delimiter
+    
+    
   ###
     @abortXhr: ->
       for k, v of @
