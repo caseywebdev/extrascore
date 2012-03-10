@@ -491,22 +491,22 @@ if not Extrascore? and jQuery? and _? and _.str?
       $(document).on 'touchend', touchEndEvent
       
     # Making Cookie management easy on you
-    Cookie: (name, value, options = {}) ->
+    Cookie: (name, val, opt = {}) ->
       if typeof name is 'object'
-        _.Cookie n, v, value for n, v of name
-      else if typeof name is 'string' and value isnt undefined
-        options.expires = -1 if value is null
-        value ||= ''
+        _.Cookie n, v, val for n, v of name
+      else if typeof name is 'string' and val isnt undefined
+        opt.expires = -1 if val is null
+        val ||= ''
         params = []
-        params.push "; Expires=#{if options.expires.toGMTString? then options.expires.toGMTString() else new Date(new Date().getTime()+options.expires*1000*60*60*24).toGMTString()}" if options.expires
-        params.push "; Path=#{options.path}" if options.path
-        params.push "; Domain=#{options.domain}" if options.domain
-        params.push '; HttpOnly' if options.httpOnly
-        params.push '; Secure' if options.secure
-        document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent value}#{params.join ''}"
+        params.push "; Expires=#{if opt.expires.toGMTString? then opt.expires.toGMTString() else new Date(new Date().getTime()+opt.expires*1000*60*60*24).toGMTString()}" if opt.expires
+        params.push "; Path=#{opt.path}" if opt.path
+        params.push "; Domain=#{opt.domain}" if opt.domain
+        params.push '; HttpOnly' if opt.httpOnly
+        params.push '; Secure' if opt.secure
+        document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent val}#{params.join ''}"
       else
         cookies = {}
-        for cookie in decodeURIComponent(document.cookie).split /\s*;\s*/
+        _(decodeURIComponent(document.cookie).split /\s*;\s*/).each (cookie) ->
           {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
           if typeof name is 'string' and name is n
             return v
