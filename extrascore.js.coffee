@@ -4,7 +4,7 @@
 if not Extrascore? and jQuery? and _? and _.str?
   
   # Don't define Extrascore twice
-  window.Extrascore = true
+  window.Extrascore = true;
   
   # Use the jQuery shortcut
   $ = jQuery
@@ -17,8 +17,7 @@ if not Extrascore? and jQuery? and _? and _.str?
     
     # Mass method call for every child of obj
     mass: (obj, str) ->
-      for key, val of obj
-        val?[str]?()
+      _(obj).each (val) -> val?[str]?()
         
     # Initialize an object by calling init on children and then assigning the load method to jQuery's DOM ready call
     init: (obj) ->
@@ -27,27 +26,27 @@ if not Extrascore? and jQuery? and _? and _.str?
       
     # Call on jQuery's DOM ready call
     load: (obj) ->
-      obj.method "init"
+      obj.mass 'load'
       _(obj).dom()
-      $('body').on 'DomSubtreeModified', -> _(obj).dom if not obj.domLocked
+      $('body').on 'DOMSubtreeModified', -> _(obj).dom() unless obj.domLocked
       
-    # Call on every DOMSubtreeModified event (use carefully)
+    # Call on every DOMSubtreeModified event (use carefully, doesn't work in Opera *shocking*)
     dom: (obj) ->
       obj.domLocked = true
       obj.mass 'dom'
       obj.domLocked = false
     
-    # Simplify a string for use in a URL or query
-    simplify: (str, opt={}) ->
+    # Clean a string for use in a URL or query
+    clean: (str, opt={}) ->
       opt = _.extend
         delimiter: ' '
-        alphanumeric: true
-        downcase: true
+        alphanumeric: false
+        downcase: false
       , opt
       str = str+''
       str = str.toLowerCase() if opt.downcase
       str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
-      _.chain(str).clean().replace //g, opt.delimiter
+      _(str.replace /\s+/, ' ').strip().replace /\ /g, opt.delimiter
     
     # Sort an object by key for iteration
     sortByKey: (obj) ->
@@ -58,229 +57,272 @@ if not Extrascore? and jQuery? and _? and _.str?
         .each (val) -> newObj[val[0]] = val[1]
       newObj
     
-    # A quick zip to the top of the page, or optionally to a jQuery object specified by `tar`
+    # A quick zip to the top of the page, or optionally to a jQuery object specified by `val`
     scrollTo: (val = 0, duration, callback) ->
       if val instanceof $
         val = val.offset().top
       $(if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
     
-    ###
-    @Placeholder: class
-      @locked: false
-      @load: ->
-        #hijack jQuery's .val() to it will return an empty string if Placeholder says it should
+    # Placeholder for lame browsers
+    Placeholder:
+      
+      # After the DOM is loaded
+      load: ->
+      
+        # Hijack jQuery's .val() so it will return an empty string if Placeholder says it should
         $.fn._val = $.fn.val
         $.fn.val = (str) ->
-          unless str?
-            if $(@).data "empty" then "" else $(@)._val()
-          else
+          if str?
             $(@).each -> $(@)._val str
-      @dom: ->
-        if not @locked
-          @locked = true
-          $("input[data-placeholder], textarea[data-placeholder]").each ->
-            $t = $ @
-            password = $t.data("password")?
-            placeholder = $t.data "placeholder"
-            if placeholder and not $t.data("empty")?
-              $t[0].type = "password" if password
-              unless password and $.browser.msie and $.browser.version.split(".")[0] < 9
-                if not $t.val() or $t.val() is placeholder
-                  $t.data "empty", true
-                  $t.val placeholder
-                  $t[0].type = "" if password
-                else
-                  $t.data "empty", false
-                $t.attr placeholder: placeholder, title: placeholder
-                $t.focus(->
-                  $t.val "" if $t.data "empty"
-                  if password
-                    $t[0].type = "password"
-                    $t.attr "placeholder", placeholder
-                  $t.data "empty", false
-                ).blur ->
-                  if $t.val()
-                    $t.data "empty", false
-                  else
-                    $t.val placeholder
-                    $t.data "empty", true
-                    $t[0].type = "" if password
-          @locked = false
-    @PopUp: class
-      @load: ->
-        unless $("#caseyWebDevPopUp").length
-          @$table = $("""<table id="caseyWebDevPopUp"><tbody><tr><td><div/></td></tr></tbody></table>""").css "opacity", 0
-          @hide()
-          $("body").append @$table
-          @$td = @$table.find "td"          
-          @$div = @$td.find "div"
-          $(window).on "scroll resize orientationchange", => @correctUi()
-          @$td.on "click", =>
-            @$div.find(".click").click()
-          @$div.on "click", false
-          @$div.on "click", ".hide-on-click", => @hide()
-          $(document).keydown (e) =>
-            if @$table.css("display") is "block" and not $("body :focus").length
-              if e.keyCode is 13 and @$div.find(".enter").length
-                @$div.find(".enter").click()
-              else if e.keyCode is 27 and @$div.find(".esc").length
-                @$div.find(".esc").click()
+          else
+            if $(@).data 'empty' then '' else $(@)._val()
+      
+      # Check for new inputs or textareas than need to be initialized with Placeholder
+      dom: ->
+        $('input[data-placeholder], textarea[data-placeholder]').each ->
+          $t = $ @
+          password = $t.data('password')?
+          placeholder = $t.data 'placeholder'
+          if placeholder and not $t.data('empty')?
+            $t[0].type = 'password' if password
+            unless password and $.browser.msie and $.browser.version.split('.') < 9
+              if not $t.val() or $t.val() is placeholder
+                $t.data 'empty', true
+                $t.val placeholder
+                $t[0].type = "" if password
               else
-                return true
+                $t.data 'empty', false
+              $t.attr placeholder: placeholder, title: placeholder
+              $t.focus(->
+                $t.val '' if $t.data 'empty'
+                if password
+                  $t[0].type = 'password'
+                  $t.attr 'placeholder', placeholder
+                $t.data 'empty', false
+              ).blur ->
+                if $t.val()
+                  $t.data 'empty', false
+                else
+                  $t.val placeholder
+                  $t.data 'empty', true
+                  $t[0].type = "" if password
+    
+    # Multipurpose PopUp
+    PopUp:
+      
+      # After the DOM is load
+      load: ->
+        unless $('#_pop-up').length
+          o = _.PopUp;
+          $('body').append o.$table =  $('<table id="_pop-up"><tbody><tr><td><div/></td></tr></tbody></table>').css 'opacity', 0
+          o.hide()
+          o.$td = o.$table.find 'td'         
+          o.$div = o.$td.find 'div'
+          $(window).on 'scroll resize orientationchange', o.correctUi
+          o.$td.on 'click', -> o.$div.find('.outside-pop-up').click()
+          o.$div
+            .on('click', false)
+            .on 'click', '.hide-pop-up', o.hide
+          $(document).keydown (e) ->
+            if o.$table.css('display') is 'block' and not $('body :focus').length
+              switch e.keyCode
+                when 13 then o.$div.find('.enter-pop-up').click()
+                when 27 then o.$div.find('.esc-pop-up').click()
+                else return true
               false
-          @correctUi()
-      @correctUi: ->
-        @$td.width($(window).width()).height $(window).height()
-      @hide: ->
-        @$table.stop().animate opacity: 0, 250, => @$table.css "display", "none"
-      @show: (html, duration, callback) ->
-        $("body :focus").blur()
-        @$div.html html
-        @$table.stop().css("display", "block").animate opacity: 1, 250
+          o.correctUi()
+      
+      # Match the PopUp size to the window
+      correctUi: ->
+        _.PopUp.$td.width($(window).width()).height $(window).height()
+        
+      # Fade the PopUp out
+      hide: ->
+        o = _.PopUp
+        o.$table.stop().animate opacity: 0, 250, -> o.$table.css 'display', 'none'
+        
+      # Show the PopUp with the given `html`, optionally for a duration
+      show: (html, duration, callback) ->
+        o = _.PopUp
+        $('body :focus').blur()
+        o.$div.html html
+        o.$table.stop().css('display', 'block').animate opacity: 1, 250
         clearTimeout @timer if @timer?
-        @timer = setTimeout =>
-          @hide()
+        o.timer = setTimeout ->
+          o.hide()
           callback?()
         , duration if duration
-    @LiveSearch: class
-      @load: ->
-        $("input, textarea").attr autocomplete: "off"
-      @trim: (s) ->
-        $.trim s.replace /\s+/g, " "
-      @dom: ->
-        $("*[data-live-search-callback]").each (i, e) =>
-          $wrap = $ e
-          unless $wrap.data("liveSearchCache")?
-            $wrap.data
-              liveSearchCache: []
-              liveSearchId: 0
-              liveSearchAjax: {}
-              liveSearchLastQ: null
-              liveSearchPage: 0
-              liveSearchHoldHover: false
-            $q = $wrap.find ".q"
-            $results = $wrap.find ".results"
-            @query $wrap if $q.is ":focus"
-            $wrap.hover(->
-              $wrap.data hover: true
+    
+    # Search (as you type)
+    Search:
+      
+      # Check for Search objects to be initialized
+      dom: ->
+        $('*[data-search]').each ->
+          $search = $ @
+          if not $search.data('cache')?
+            o = _.Search
+            $search.data
+              cache: []
+              id: 0
+              ajax: {}
+              lastQ: null
+              page: 0
+              holdHover: false
+              q: $search.find('.q').attr(autocomplete: 'off')
+              results: $search.find '.results'
+            $q = $search.data('q')
+            $results = $search
+            o.query $search if $q.is ':focus'
+            $search.hover(->
+              $search.data hover: true
             , ->
-              $wrap.data hover: false
-              $results.css display: "none" unless $q.is(":focus") or $wrap.data "liveSearchHoldHover"
+              $search.data hover: false
+              $results.css display: 'none' unless $q.is(':focus') or $search.data 'holdHover'
             ).mouseover ->
-              $wrap.data liveSearchHoldHover: false
+              $search.data holdHover: false
             $q.blur(->
               setTimeout ->
-                $results.css display: "none" unless $wrap.data "hover"
+                $results.css display: 'none' unless $search.data 'hover'
               , 0
             ).focus(->
-              $wrap.data liveSearchHoldHover: false
-            ).keydown((e) =>
+              $search.data holdHover: false
+            ).keydown((e) ->
               switch e.keyCode
-                when 13 then $wrap.find(".selected").click()
-                when 38 then @select $wrap, "prev"
-                when 40 then @select $wrap, "next"
+                when 13 then $search.find('.selected').click()
+                when 38 then o.select $search, 'prev'
+                when 40 then o.select $search, 'next'
                 when 27
                   setTimeout ->
-                    $results.css display: "none"
+                    $results.css display: 'none'
                   , 0
                   $q.blur()
                 else
-                  setTimeout =>
-                    @query($wrap) if $q.is ":focus"
+                  setTimeout ->
+                    o.query $search if $q.is ':focus'
                   , 0
                   return true
               false
-            ).on "focus keyup change", =>
-              @query $wrap
-            $results.on("mouseenter", ".result", ->
-              $results.find(".result.selected").removeClass "selected"
-              $(@).addClass "selected"
-            ).on "click", ".result", (e) =>
-              $t = $ e.currentTarget
-              $results.find(".result.selected").removeClass "selected"
-              $t.addClass "selected"
-              if $t.hasClass "prev"
-                @page $wrap, $wrap.data("liveSearchPage")-1, true
-                $wrap.data "liveSearchHoldHover", true
-              else if  $t.hasClass "next"
-                @page $wrap, $wrap.data("liveSearchPage")+1
-                $wrap.data "liveSearchHoldHover", true
-              else if $t.hasClass "submit"
-                $t.parents("form").submit()
-              if $t.hasClass "hide"
-                $("#search .q").blur()
-                $("#search .results").css "display", "none"
-      @page: ($wraps, n, prev) ->
-        $wraps.each ->
-          $wrap = $ @
-          $results = $wrap.find ".results"
-          n = Math.min $results.find(".page").length-1, Math.max n, 0
-          $results.find(".result.selected").removeClass "selected"
-          $results.find(".page").css("display", "none").eq(n).removeAttr("style").find(".result:not(.prev):not(.next)")[if prev then "last" else "first"]().addClass "selected"
-          $wrap.data "liveSearchPage", n
-      @query: ($wraps, urlN = 1) ->
-        $wraps.each (i, e) =>
-          $wrap = $ e
-          $results = $wrap.find ".results"
-          callback = eval $wrap.data("liveSearchCallback")
-          q = @trim $wrap.find(".q").val()
+            ).on 'focus keyup change', ->
+              o.query $search
+            $results.on('mouseenter', '.result', ->
+              $results.find('.result.selected').removeClass 'selected'
+              $(@).addClass 'selected'
+            ).on 'click', '.result', ->
+              $t = $ @
+              $results.find('.result.selected').removeClass 'selected'
+              $t.addClass 'selected'
+              if $t.hasClass 'prev'
+                o.page $search, $search.data('page')-1, true
+                $search.data holdHover: true
+              else if  $t.hasClass 'next'
+                o.page $search, $search.data('page')+1
+                $search.data holdHover: true
+              else if $t.hasClass 'submit'
+                $t.parents('form').submit()
+              if $t.hasClass 'hide-search'
+                $q.blur()
+                $results.css display: 'none'
+      
+      # Change the current search results page
+      page: ($searches, n, prev) ->
+        $searches.each ->
+          $search = $ @
+          $results = $search.data 'results'
+          n = Math.min $results.find('.page').length-1, Math.max n, 0
+          $results.find('.result.selected').removeClass 'selected'
+          $results.find('.page').css('display', 'none').eq(n).removeAttr('style').find('.result:not(.prev):not(.next)')[if prev then 'last' else 'first']().addClass 'selected'
+          $search.data 'page', n
+      
+      # Send the value of q to the correct search function and return the result to the correct callback
+      query: ($searches, urlN = 1) ->
+        $searches.each ->
+          o = _.Search
+          $search = $ @
+          $results = $search.data 'results'
+          $q = $search.data 'q'
+          callback = eval $search.data('search')
+          q = o.parseQuery $q.val()
           t = new Date().getTime()
-          $results.css "display", "block"
-          empty = "liveSearchEmpty" of $wrap.data()
+          $results.css display: 'block'
+          empty = 'empty' of $search.data
           unless q or empty
-            $results.css("display", "none").html ""
-            $wrap.removeClass "loading"
-          else if q isnt $wrap.data("liveSearchLastQ") or urlN > 1
-            callback $wrap
-            clearTimeout $wrap.data("liveSearchTimeout")
-            $wrap.data("liveSearchAjax").abort?()
-            if $wrap.data("liveSearchCache")["liveSearchCache_#{urlN}_"+q]?
-              callback $wrap, $wrap.data("liveSearchCache")["liveSearchCache_#{urlN}_"+q], urlN
-              $wrap.removeClass "loading"
-              @query $wrap, urlN+1 if $wrap.data("liveSearchUrl#{urlN+1}")?
+            $results.css(display: 'none').html ''
+            $search.removeClass 'loading'
+          else if q isnt $search.data('lastQ') or urlN > 1
+            callback $search
+            clearTimeout $search.data 'timeout'
+            $search.data('ajax').abort?()
+            if $search.data('cache')["#{urlN}_"+q]?
+              callback $search, $search.data('cache')["#{urlN}_"+q], urlN
+              $search.removeClass 'loading'
+              o.query $search, urlN+1 if $search.data("url#{urlN+1}")?
             else
-              $wrap.addClass("loading").data "liveSearchTimeout",
-                setTimeout =>
-                  check = $wrap.data("liveSearchId", $wrap.data("liveSearchId")+1).data "liveSearchId"
-                  handleData = (data) =>
-                    $wrap.data("liveSearchCache")["liveSearchCache_#{urlN}_"+q] = data
-                    if check is $wrap.data("liveSearchId") and (@trim($wrap.find(".q").val()) or empty)
-                      $wrap.removeClass "loading"
-                      callback $wrap, data, urlN
-                    @query $wrap, urlN+1 if $wrap.data "liveSearchUrl"+(urlN+1)
-                  if $wrap.data("liveSearchJs")?
-                    handleData eval($wrap.data "liveSearchJs")(q)
-                  else if $wrap.data("liveSearchUrl")?
-                    $wrap.data liveSearchAjax: $.getJSON($wrap.data("liveSearchUrl#{if urlN is 1 then "" else urlN}"), q: q, handleData)
-                , $wrap.data("liveSearchDelay") ? 0
-          $wrap.data "liveSearchLastQ", q
-      @select: ($wraps, dir) ->
-        $wraps.each (i, e) =>
-          $wrap = $ e
-          $page = $wrap.find(".page").eq $wrap.data "liveSearchPage"
-          $page.find(".result")[if dir is "prev" then "first" else "last"]().addClass "selected" unless $page.find(".result.selected").removeClass("selected")[dir]().addClass("selected").length
-          if $page.find(".result.selected").hasClass "prev"
-            @page $wrap, $wrap.data("liveSearchPage")-1, true
-          else if $page.find(".result.selected").hasClass "next"
-            @page $wrap, $wrap.data("liveSearchPage")+1
-    @Tooltip: class
-      @load: ->
-        $("body").on "mouseenter focus", "*[data-tooltip-text]", (e) ->
+              $search.addClass('loading').data 'timeout',
+                setTimeout ->
+                  handleData = (data) ->
+                    $search.data('cache')["#{urlN}_"+q] = data
+                    if check is $search.data('id') and o.parseQuery($q.val()) or empty
+                      $search.removeClass 'loading'
+                      callback $search, data, urlN
+                    o.query $search, urlN+1 if $search.data 'url'+(urlN+1)
+                  check = $search.data(id: $search.data('id')+1).data 'id'
+                  if $search.data('js')?
+                    handleData eval($search.data 'js')(q)
+                  else if $search.data('url')?
+                    $search.data ajax: $.getJSON($search.data("url#{if urlN is 1 then '' else urlN}"), q: q, handleData)
+                , $search.data('delay') ? 0
+          $search.data 'lastQ', q
+      
+      # Select the next or previous in a list of results
+      select: ($searches, dir) ->
+        $searches.each ->
+          o = _.Search
+          $search = $ @
+          $page = $search.find('.page').eq $search.data 'page'
+          $page.find('.result')[if dir is 'prev' then 'first' else 'last']().addClass 'selected' unless $page.find('.result.selected').removeClass('selected')[dir]().addClass('selected').length
+          if $page.find('.result.selected').hasClass 'prev'
+            o.page $search, $search.data('page')-1, true
+          else if $page.find('.result.selected').hasClass 'next'
+            o.page $search, $search.data('page')+1
+    
+      # Break a query up into components if colons are used
+      parseQuery: (str) ->
+        str = _(str).clean downcase: true
+        colon = _(str.split ':').compact()
+        if colon.length > 1
+          colon = _(colon).map (str) -> _(str).strip().match /(?:^|^(.*) )(\w+)$/
+          terms = {}
+          _(colon).each (match, i) ->
+            if i < colon.length-1
+              terms[match[2]] = colon[i+1][1]
+            else
+              prev = colon[i-1][2]
+              terms[prev] = (terms[prev] ? terms[prev]+' ' : '')+match[2]
+          terms
+        else
+          str
+         
+    # Yay tooltips!
+    Tooltip:
+      load: ->
+        $('body').on 'mouseenter focus', '*[data-tooltip]', (e) ->
           $t = $ @
-          unless $t.data "hover" or $t.data "focus"
-            unless $t.data("tooltipDiv")?
-              $t.data "tooltipDiv", $ """<div class="caseyWebDevTooltip"/>"""
-              $t.parent().append $t.data "tooltipDiv"
-            pos = $t.data("tooltipPosition") ? "top"
-            $t.data("tooltipDiv").html """#{$t.data "tooltipText"}<div class="caseyWebDevTooltipArrow #{pos}"></div>"""
-            tL = $t.position().left+parseInt $t.css "marginLeft"
-            tT = $t.position().top+parseInt $t.css "marginTop"
-            hW = ($t.outerWidth()-$t.data("tooltipDiv").outerWidth())/2
-            hH = ($t.outerHeight()-$t.data("tooltipDiv").outerHeight())/2
+          unless $t.data 'hover' or $t.data 'focus'
+            $div = $t.data 'div'
+            unless $div
+              $div = $t.data(div: $ '<div class="_tooltip"/>').data 'div'
+              $t.parent().append $div
+            pos = $t.data('position') ? 'top'
+            $div.html """<div class="_tooltip-arrow #{pos}"></div>#{$t.data 'tooltipText'}"""
+            tL = $t.position().left+parseInt $t.css 'marginLeft'
+            tT = $t.position().top+parseInt $t.css 'marginTop'
+            hW = ($t.outerWidth()-$div.outerWidth())/2
+            hH = ($t.outerHeight()-$div.outerHeight())/2
             dir =
               top:
                 left: hW
-                top: -$t.data("tooltipDiv").outerHeight()-15
+                top: -$div.outerHeight()-15
                 dLeft: 0
                 dTop: 10
               right:
@@ -294,30 +336,35 @@ if not Extrascore? and jQuery? and _? and _.str?
                 dLeft: 0
                 dTop: -10
               left:
-                left: -$t.data("tooltipDiv").outerWidth()-15
+                left: -$div.outerWidth()-15
                 top: hH
                 dLeft: 10
                 dTop: 0
-            $t.data("tooltipDiv").css(
+            $div.css(
               left: tL+dir[pos].left
               top: tT+dir[pos].top
               opacity: 0
-              display: "block"
+              display: 'block'
             ).stop().animate
-              left: "+="+dir[pos].dLeft
-              top: "+="+dir[pos].dTop
+              left: '+='+dir[pos].dLeft
+              top: '+='+dir[pos].dTop
               opacity: 1
-            , $t.data("tooltipSpeed") ? 200
-            $t.on "mouseleave blur", (e) ->
-              $t.data (if e.type is "mouseleave" then "hover" else "focus"), false
-              unless $t.data "hover" or $t.data "focus"
-                $t.data("tooltipDiv").stop().animate(
-                  left: "+=#{-dir[pos].dLeft}"
-                  top: "+=#{-dir[pos].dTop}"
+            , $t.data('speed') ? 200
+            $t.on 'mouseleave blur', (e) ->
+              $t.data (if e.type is 'mouseleave' then 'hover' else 'focus'), false
+              unless $t.data 'hover' or $t.data 'focus'
+                $div.stop().animate(
+                  left: '+=#{-dir[pos].dLeft}'
+                  top: '+=#{-dir[pos].dTop}'
                   opacity: 0
-                , $t.data("tooltipSpeed") ? 200
-                , -> $(@).css "display", "none").off e
-          $t.data (if e.type is "mouseenter" then "hover" else "focus"), true
+                , $t.data('speed') ? 200
+                , -> $(@).css display: 'none').off e
+          $t.data (if e.type is 'mouseenter' then 'hover' else 'focus'), true
+    
+    ###
+    #
+    # Looking into Backbone as a replacement for my lovely State class
+    #
     @State: class
       @xhr: {}
       @cache: {}
@@ -327,12 +374,12 @@ if not Extrascore? and jQuery? and _? and _.str?
       @init: ->
         if history.state?
           history.replaceState true, null
-        $(window).on("popstate", (e) =>
+        $(window).on("popstate", (e) ->
           if e.originalEvent.state?
             @push location.href
           else
             history.replaceState true, null
-        ).on "click", "*[data-push-state]", (e) =>
+        ).on "click", "*[data-push-state]", (e) ->
           $t = $ e.currentTarget
           @push if $t.data "pushState" then $t.data "pushState" else $t.attr "href"
           false
@@ -352,7 +399,7 @@ if not Extrascore? and jQuery? and _? and _.str?
             @change url
           else
             @before url
-            @xhr = $.get("#{url}#{if "?" in url then "&" else "?"}#{@query}", null, (data) =>
+            @xhr = $.get("#{url}#{if "?" in url then "&" else "?"}#{@query}", null, (data) ->
               if data[0...@prefix.length] is @prefix
                 @updateCache url,
                   title: /^[^\n]*\n([^\n]*)\n/.exec(data)[1]
@@ -372,26 +419,38 @@ if not Extrascore? and jQuery? and _? and _.str?
       @before: (url) ->
       @after: (url) ->
       @parse: (url) ->
-    @LazyLoad: class
-      @tolerance: 100
-      @load: ->
-        @update()
-        $(window).on "scroll resize", => @update()
-      @update: ->
-        $("img[data-lazy]").each (i, e) =>
-          $t = $ e
-          if $t.css("display") isnt "none" && $(window).scrollTop()+$(window).outerHeight() >= $t.offset().top-@tolerance
-            url = $t.data "lazy"
-            $t.removeAttr("data-lazy").attr "src", url
-    @Konami: (callback, onlyOnce = false, code = "38,38,40,40,37,39,37,39,66,65,13", swipeCode = "up,up,down,down,left,right,left,right,tap,tap,tap") ->
+    ###
+    
+    # Load images only when they're on the page or about to be on it
+    Lazy:
+    
+      # Default tolerance, can be overidden
+      tolerance: 100
+      
+      # After the DOM is ready
+      load: ->
+        $(window).on 'scroll resize', _.Lazy.dom
+        
+      # Check for new lazy images
+      dom: ->
+        $('img[data-lazy]').each ->
+          visible = _($t.parents).reduce (memo, parent) ->
+            memo and $(parent).css('display') isnt 'none' and $(parent).css('visibility') isnt 'hidden'
+          , true
+          if visible && $(window).scrollTop()+$(window).outerHeight() >= $t.offset().top-_.Lazy.tolerance
+            url = $t.data 'lazy'
+            $t.removeAttr('data-lazy').attr 'src', url
+    
+    # Everyone's favorite cheat code        
+    Konami: (callback, onlyOnce = false, code = '38,38,40,40,37,39,37,39,66,65,13', touchCode = 'up,up,down,down,left,right,left,right,tap,tap,tap') ->
       keysPressed = []
       touchEvents = []
       tap = false
       startX = startY = dX = dY = 0
       keyDownEvent = (e) ->
         keysPressed.push e.keyCode
-        if keysPressed.toString()[-code.length..-1] is code
-          $(document).off "keydown", keyDownEvent if onlyOnce
+        if _(keysPressed+'').endsWith code
+          $(document).off 'keydown', keyDownEvent if onlyOnce
           keysPressed = []
           e.preventDefault()
           callback()
@@ -407,8 +466,8 @@ if not Extrascore? and jQuery? and _? and _.str?
           touch = e.touches[0]
           dX = touch.screenX-startX
           dY = touch.screenY-startY
-          rightLeft = if dX > 0 then "right" else "left"
-          downUp = if dY > 0 then "down" else "up"
+          rightLeft = if dX > 0 then 'right' else 'left'
+          downUp = if dY > 0 then 'down' else 'up'
           val = if Math.abs(dX) > Math.abs dY then rightLeft else downUp
           touchEvents.push val
           tap = false
@@ -416,40 +475,41 @@ if not Extrascore? and jQuery? and _? and _.str?
       touchEndEvent = (e) ->
         e = e.originalEvent
         if e.touches.length is 0 and tap
-          touchEvents.push "tap"
+          touchEvents.push 'tap'
           checkEvents e
       checkEvents = (e) ->
-        if touchEvents.toString()[-swipeCode.length..-1] is swipeCode
+        if _(touchEvents+'').endsWith touchCode
           if onlyOnce
-            $(document).off "touchmove", touchMoveEvent
-            $(document).off "touchend", touchEndEvent
+            $(document).off 'touchmove', touchMoveEvent
+            $(document).off 'touchend', touchEndEvent
           touchEvents = []
           e.preventDefault()
           callback()
-      $(document).on "keydown", keyDownEvent
-      $(document).on "touchstart", touchStartEvent
-      $(document).on "touchmove", touchMoveEvent
-      $(document).on "touchend", touchEndEvent
-    @Cookie: (name, value, options = {}) =>
-      if typeof name is "object"
-        @Cookie n, v, value for n, v of name
-      else if typeof name is "string" and value isnt undefined
+      $(document).on 'keydown', keyDownEvent
+      $(document).on 'touchstart', touchStartEvent
+      $(document).on 'touchmove', touchMoveEvent
+      $(document).on 'touchend', touchEndEvent
+      
+    # Making Cookie management easy on you
+    Cookie: (name, value, options = {}) ->
+      if typeof name is 'object'
+        _.Cookie n, v, value for n, v of name
+      else if typeof name is 'string' and value isnt undefined
         options.expires = -1 if value is null
-        value ||= ""
+        value ||= ''
         params = []
         params.push "; Expires=#{if options.expires.toGMTString? then options.expires.toGMTString() else new Date(new Date().getTime()+options.expires*1000*60*60*24).toGMTString()}" if options.expires
         params.push "; Path=#{options.path}" if options.path
         params.push "; Domain=#{options.domain}" if options.domain
-        params.push "; HttpOnly" if options.httpOnly
-        params.push "; Secure" if options.secure
-        document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent value}#{params.join ""}"
+        params.push '; HttpOnly' if options.httpOnly
+        params.push '; Secure' if options.secure
+        document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent value}#{params.join ''}"
       else
         cookies = {}
         for cookie in decodeURIComponent(document.cookie).split /\s*;\s*/
           {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
-          if typeof name is "string" and name is n
+          if typeof name is 'string' and name is n
             return v
           else if not name?
             cookies[n] = v
         if not name then cookies else null
-        ###
