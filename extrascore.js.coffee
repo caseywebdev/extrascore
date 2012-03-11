@@ -311,10 +311,10 @@ if not Extrascore? and jQuery? and _? and _.str?
         load: ->
           $('body').on 'mouseenter focus', '*[data-tooltip]', (e) ->
             $t = $ @
-            unless $t.data 'hover' or $t.data 'focus'
+            unless $t.data('hover') or $t.is ':focus'
               pos = $t.data('position') ? 'top'
-              offset = $t.data('offset') ? 10
-              duration = $t.data('duration') ? 200
+              offset = $t.data('offset') ? 0
+              duration = $t.data('duration') ? 0
               $div = $t.data 'div'
               unless $div
                 $div = $t.data(div: $ """<div class="_tooltip #{pos}"/>""").data 'div'
@@ -329,42 +329,46 @@ if not Extrascore? and jQuery? and _? and _.str?
                   left: hW
                   top: -$div.outerHeight()
                   dLeft: 0
-                  dTop: offset
+                  dTop: 1
                 right:
                   left: $t.outerWidth()
                   top: hH
-                  dLeft: -offset
+                  dLeft: -1
                   dTop: 0
                 bottom:
                   left: hW
                   top: $t.outerHeight()
                   dLeft: 0
-                  dTop: -offset
+                  dTop: -1
                 left:
                   left: -$div.outerWidth()
                   top: hH
-                  dLeft: offset
+                  dLeft: 1
                   dTop: 0
+              homeLeft = tL+dir[pos].left
+              homeTop = tT+dir[pos].top
+              offsetLeft = homeLeft-dir[pos].dLeft*offset
+              offsetTop = homeTop-dir[pos].dTop*offset
               $div.css(
-                left: tL+dir[pos].left
-                top: tT+dir[pos].top
+                left: offsetLeft
+                top: offsetTop
                 opacity: 0
                 display: 'block'
               ).stop().animate
-                left: '+='+dir[pos].dLeft
-                top: '+='+dir[pos].dTop
+                left: homeLeft
+                top: homeTop
                 opacity: 1
               , duration
               $t.on 'mouseleave blur', (e) ->
-                $t.data (if e.type is 'mouseleave' then 'hover' else 'focus'), false
-                unless $t.data 'hover' or $t.data 'focus'
+                $t.data 'hover', false if e.type is 'mouseleave'
+                unless $t.data('hover') or $t.is ':focus'
                   $div.stop().animate(
-                    left: '+=#{-dir[pos].dLeft}'
-                    top: '+=#{-dir[pos].dTop}'
+                    left: offsetLeft
+                    top: offsetTop
                     opacity: 0
                   , duration
                   , -> $(@).css display: 'none').off e
-            $t.data (if e.type is 'mouseenter' then 'hover' else 'focus'), true
+            $t.data 'hover', true if e.type is 'mouseenter'
       
       ###
       #
