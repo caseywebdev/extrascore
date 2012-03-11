@@ -312,12 +312,14 @@ if not Extrascore? and jQuery? and _? and _.str?
           $('body').on 'mouseenter focus', '*[data-tooltip]', (e) ->
             $t = $ @
             unless $t.data 'hover' or $t.data 'focus'
+              pos = $t.data('position') ? 'top'
+              offset = $t.data('offset') ? 10
+              duration = $t.data('duration') ? 200
               $div = $t.data 'div'
               unless $div
-                $div = $t.data(div: $ '<div class="_tooltip"/>').data 'div'
+                $div = $t.data(div: $ """<div class="_tooltip #{pos}"/>""").data 'div'
                 $t.parent().append $div
-              pos = $t.data('position') ? 'top'
-              $div.html """<div class="_tooltip-arrow #{pos}"></div>#{$t.data 'tooltipText'}"""
+              $div.html $t.data 'tooltip'
               tL = $t.position().left+parseInt $t.css 'marginLeft'
               tT = $t.position().top+parseInt $t.css 'marginTop'
               hW = ($t.outerWidth()-$div.outerWidth())/2
@@ -325,23 +327,23 @@ if not Extrascore? and jQuery? and _? and _.str?
               dir =
                 top:
                   left: hW
-                  top: -$div.outerHeight()-15
+                  top: -$div.outerHeight()
                   dLeft: 0
-                  dTop: 10
+                  dTop: offset
                 right:
-                  left: $t.outerWidth()+15
+                  left: $t.outerWidth()
                   top: hH
-                  dLeft: -10
+                  dLeft: -offset
                   dTop: 0
                 bottom:
                   left: hW
-                  top: $t.outerHeight()+15
+                  top: $t.outerHeight()
                   dLeft: 0
-                  dTop: -10
+                  dTop: -offset
                 left:
-                  left: -$div.outerWidth()-15
+                  left: -$div.outerWidth()
                   top: hH
-                  dLeft: 10
+                  dLeft: offset
                   dTop: 0
               $div.css(
                 left: tL+dir[pos].left
@@ -352,7 +354,7 @@ if not Extrascore? and jQuery? and _? and _.str?
                 left: '+='+dir[pos].dLeft
                 top: '+='+dir[pos].dTop
                 opacity: 1
-              , $t.data('speed') ? 200
+              , duration
               $t.on 'mouseleave blur', (e) ->
                 $t.data (if e.type is 'mouseleave' then 'hover' else 'focus'), false
                 unless $t.data 'hover' or $t.data 'focus'
@@ -360,7 +362,7 @@ if not Extrascore? and jQuery? and _? and _.str?
                     left: '+=#{-dir[pos].dLeft}'
                     top: '+=#{-dir[pos].dTop}'
                     opacity: 0
-                  , $t.data('speed') ? 200
+                  , duration
                   , -> $(@).css display: 'none').off e
             $t.data (if e.type is 'mouseenter' then 'hover' else 'focus'), true
       
