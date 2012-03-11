@@ -17,18 +17,18 @@ if not Extrascore? and jQuery? and _? and _.str?
     
     # Mass method call for every child of obj
     mass: (obj, str) ->
-      _(obj).each (val) -> val?[str]?()
+      _.each obj, (val) -> val?[str]?()
         
     # Initialize an object by calling init on children and then assigning the load method to jQuery's DOM ready call
     init: (obj) ->
       obj.mass "init"
-      $ _(obj).load
+      $ _.load obj
       
     # Call on jQuery's DOM ready call
     load: (obj) ->
       obj.mass 'load'
-      _(obj).dom()
-      $('body').on 'DOMSubtreeModified', -> _(obj).dom() unless obj.domLocked
+      _.dom obj
+      $('body').on 'DOMSubtreeModified', -> _.dom obj unless obj.domLocked
       
     # Call on every DOMSubtreeModified event (use carefully, doesn't work in Opera *shocking*)
     dom: (obj) ->
@@ -46,7 +46,7 @@ if not Extrascore? and jQuery? and _? and _.str?
       str = str+''
       str = str.toLowerCase() if opt.downcase
       str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
-      _(str.replace /\s+/, ' ').strip().replace /\ /g, opt.delimiter
+      _.strip(str.replace /\s+/, ' ').replace /\ /g, opt.delimiter
     
     # Sort an object by key for iteration
     sortByKey: (obj) ->
@@ -288,12 +288,12 @@ if not Extrascore? and jQuery? and _? and _.str?
     
       # Break a query up into components if colons are used
       parseQuery: (str) ->
-        str = _(str).clean downcase: true
-        colon = _(str.split ':').compact()
+        str = _.clean str, downcase: true
+        colon = _.compact str.split ':'
         if colon.length > 1
-          colon = _(colon).map (str) -> _(str).strip().match /(?:^|^(.*) )(\w+)$/
+          colon = _.map colon, (str) -> _.strip(str).match /(?:^|^(.*) )(\w+)$/
           terms = {}
-          _(colon).each (match, i) ->
+          _.each colon, (match, i) ->
             if i < colon.length-1
               terms[match[2]] = colon[i+1][1]
             else
@@ -434,7 +434,7 @@ if not Extrascore? and jQuery? and _? and _.str?
       # Check for new lazy images
       dom: ->
         $('img[data-lazy]').each ->
-          visible = _($t.parents).reduce (memo, parent) ->
+          visible = _.reduce $t.parents, (memo, parent) ->
             memo and $(parent).css('display') isnt 'none' and $(parent).css('visibility') isnt 'hidden'
           , true
           if visible && $(window).scrollTop()+$(window).outerHeight() >= $t.offset().top-_.Lazy.tolerance
@@ -449,7 +449,7 @@ if not Extrascore? and jQuery? and _? and _.str?
       startX = startY = dX = dY = 0
       keyDownEvent = (e) ->
         keysPressed.push e.keyCode
-        if _(keysPressed+'').endsWith code
+        if _.endsWith keysPressed+'', code
           $(document).off 'keydown', keyDownEvent if onlyOnce
           keysPressed = []
           e.preventDefault()
@@ -478,7 +478,7 @@ if not Extrascore? and jQuery? and _? and _.str?
           touchEvents.push 'tap'
           checkEvents e
       checkEvents = (e) ->
-        if _(touchEvents+'').endsWith touchCode
+        if _.endsWith touchEvents+'', touchCode
           if onlyOnce
             $(document).off 'touchmove', touchMoveEvent
             $(document).off 'touchend', touchEndEvent
@@ -506,10 +506,11 @@ if not Extrascore? and jQuery? and _? and _.str?
         document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent val}#{params.join ''}"
       else
         cookies = {}
-        _(decodeURIComponent(document.cookie).split /\s*;\s*/).each (cookie) ->
+        _.each decodeURIComponent(document.cookie).split(/\s*;\s*/), (cookie) ->
           {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
           if typeof name is 'string' and name is n
             return v
           else if not name?
             cookies[n] = v
         if not name then cookies else null
+  _.init _
