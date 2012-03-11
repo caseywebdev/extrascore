@@ -84,9 +84,9 @@ if not Extrascore? and jQuery? and _? and _.str?
         dom: ->
           $('input[data-placeholder], textarea[data-placeholder]').each ->
             $t = $ @
-            password = $t.data('password')?
-            placeholder = $t.data 'placeholder'
-            if placeholder and not $t.data('empty')?
+            if $t.data('placeholder')? and not $t.data('empty')?
+              password = $t.data('password')?
+              placeholder = $t.data 'placeholder'
               $t[0].type = 'password' if password
               unless password and $.browser.msie and $.browser.version.split('.') < 9
                 if not $t.val() or $t.val() is placeholder
