@@ -175,7 +175,7 @@ if not Extrascore? and jQuery? and _? and _.str?
                 q: $search.find('.q').attr(autocomplete: 'off')
                 results: $search.find '.results'
               $q = $search.data('q')
-              $results = $search
+              $results = $search.data 'results'
               o.query $search if $q.is ':focus'
               $search.hover(->
                 $search.data hover: true
@@ -370,65 +370,66 @@ if not Extrascore? and jQuery? and _? and _.str?
                   , -> $(@).css display: 'none').off e
             $t.data 'hover', true if e.type is 'mouseenter'
       
-      ###
       #
       # Looking into Backbone as a replacement for my lovely State class
       #
-      @State: class
-        @xhr: {}
-        @cache: {}
-        @refresh: false
-        @query: "pushState"
-        @prefix: "<!--pushState-->\n"
-        @init: ->
+      State:
+        xhr: {}
+        cache: {}
+        refresh: false
+        query: 'pushState'
+        prefix: '<!--pushState-->\n'
+        init: ->
+          o = _.State
           if history.state?
             history.replaceState true, null
-          $(window).on("popstate", (e) ->
+          $(window).on('popstate', (e) ->
             if e.originalEvent.state?
-              @push location.href
+              o.push location.href
             else
               history.replaceState true, null
-          ).on "click", "*[data-push-state]", (e) ->
-            $t = $ e.currentTarget
-            @push if $t.data "pushState" then $t.data "pushState" else $t.attr "href"
+          ).on 'click', '.push-state', ->
+            $t = $ @
+            o.push if $t.data 'url' then $t.data 'url' else $t.attr 'href'
             false
-        @updateCache: (url, o) ->
-          if @cache[url]?
-            $.extend @cache[url], o
+        updateCache: (url, o) ->
+          o = _.State
+          if o.cache[url]?
+            _.extend o.cache[url], o
           else
-            @cache[url] = o
-        @fullUrl: (url) ->
-          if url.match /^\w+:/ then url else location.protocol+"//"+location.host+url
-        @push: (url) ->
-          url = @fullUrl url
-          if location.protocol is url.match(/^\w+:/)[0] and history.pushState? and not @refresh
-            @xhr.abort?()
-            @clear url
-            if @cache[url]? and @cache[url].cache isnt false
-              @change url
+            o.cache[url] = o
+        fullUrl: (url) ->
+          if url.match /^\w+:/ then url else location.protocol+'//'+location.host+url
+        push: (url) ->
+          o = _.State
+          url = o.fullUrl url
+          if location.protocol is url.match(/^\w+:/)[0] and history.pushState? and not o.refresh
+            o.xhr.abort?()
+            o.clear url
+            if o.cache[url]? and o.cache[url].cache isnt false
+              o.change url
             else
-              @before url
-              @xhr = $.get("#{url}#{if "?" in url then "&" else "?"}#{@query}", null, (data) ->
-                if data[0...@prefix.length] is @prefix
-                  @updateCache url,
+              o.before url
+              o.xhr = $.get("#{url}#{if '?' in url then '&' else '?'}#{o.query}", null, (data) ->
+                if data.startsWith o.prefix
+                  o.updateCache url,
                     title: /^[^\n]*\n([^\n]*)\n/.exec(data)[1]
                     #[\s\S] is synonymous with . except that the JS . doesn't match \n like [\s\S] does
                     html: /^(?:[^\n]*\n){2}([\s\S]*)$/.exec(data)[1]
-                  @after url
-                  @change url
+                  o.after url
+                  o.change url
                 else
                   location.assign url
               ).error -> location.assign url
           else
             location.assign url
-        @change: (url) ->
+        change: (url) ->
           history.pushState true, null, url if location.href isnt url
-          @parse url
-        @clear: (url) ->
-        @before: (url) ->
-        @after: (url) ->
-        @parse: (url) ->
-      ###
+          _.State.parse url
+        clear: (url) ->
+        before: (url) ->
+        after: (url) ->
+        parse: (url) ->
       
       # Load images only when they're on the page or about to be on it
       Lazy:
