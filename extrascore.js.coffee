@@ -522,12 +522,13 @@ if not Extrascore? and jQuery? and _? and _.str?
           document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent val}#{params.join ''}"
         else
           cookies = {}
-          _.each decodeURIComponent(document.cookie).split(/\s*;\s*/), (cookie) ->
-            {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
-            if typeof name is 'string' and name is n
-              return v
-            else if not name?
-              cookies[n] = v
+          if document.cookie
+            _.each decodeURIComponent(document.cookie).split(/\s*;\s*/), (cookie) ->
+              {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
+              if typeof name is 'string' and name is n
+                return v
+              else if not name?
+                cookies[n] = v
           if not name then cookies else null
   
   # Mixin the Extrascore Mixins
