@@ -62,7 +62,22 @@ if not Extrascore? and jQuery? and _? and _.str?
         if val instanceof $
           val = val.offset().top
         $(if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
-
+      
+      # Get a full URL from a relative url
+      url: (path) ->
+          
+          # See if it's already a URL
+          if path.match /^(\w+:|\/\/)/
+            path
+            
+          # See if it's relative to the domain root
+          else if _.startsWith path, '/'
+            location.protocol+'//'+location.host+path
+            
+          # Otherwise it must be relative to the current location
+          else
+            location.href+path
+    
     # Extensions for Underscore (more of individual classes using Underscore for the namespace then actual extentions)
     Extensions:
       
@@ -402,11 +417,9 @@ if not Extrascore? and jQuery? and _? and _.str?
             _.extend o.cache[url], o
           else
             o.cache[url] = o
-        fullUrl: (url) ->
-          if url.match /^\w+:/ then url else location.protocol+'//'+location.host+url
         push: (url) ->
           o = _.State
-          url = o.fullUrl url
+          url = _.url url
           if location.protocol is url.match(/^\w+:/)[0] and history.pushState? and not o.refresh
             o.xhr.abort?()
             o.clear url
