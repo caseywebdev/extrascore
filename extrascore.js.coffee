@@ -421,12 +421,12 @@ if not Extrascore? and jQuery? and _? and _.str?
             o.push if $t.data 'url' then $t.data 'url' else $t.attr 'href'
             false
           delete o.init;
-        updateCache: (url, o) ->
+        updateCache: (url, obj) ->
           o = _.State
           if o.cache[url]?
-            _.extend o.cache[url], o
+            _.extend o.cache[url], obj
           else
-            o.cache[url] = o
+            o.cache[url] = obj
         push: (url) ->
           o = _.State
           url = _.url url
@@ -439,6 +439,7 @@ if not Extrascore? and jQuery? and _? and _.str?
               o.before url
               o.xhr = $.getJSON(url+(if o.query then (if '?' in url then '&' else '?')+o.query else ''), null, (data) ->
                 o.updateCache url, data
+                console.log o.cache
                 o.after url
                 o.change url
               ).error -> location.assign url
