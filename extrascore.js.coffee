@@ -64,12 +64,16 @@ if not Extrascore? and jQuery? and _? and _.str?
         $(if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
       
       # Get a full URL from a relative url
-      url: (path) ->
+      url: (path = '') ->
           
           # See if it's already a URL
-          if path.match /^(\w+:|\/\/)/
+          if path.match /^\w+:/
             path
-            
+          
+          # See if it's a URL looking for a protocol
+          else if _.startsWith path, '//'
+            location.protocol+path
+          
           # See if it's relative to the domain root
           else if _.startsWith path, '/'
             location.protocol+'//'+location.host+path
@@ -394,10 +398,16 @@ if not Extrascore? and jQuery? and _? and _.str?
       State:
         xhr: {}
         cache: {}
-        refresh: false
-        query: 'pushState'
-        prefix: '<!--pushState-->\n'
-        init: ->
+        
+        # The attributes below are optional and can be set at runtime as needed
+        #
+        # When true, forces State to reload the page on the next request.
+        # refresh: false
+        #
+        # Specify a query parameter to send with the XHR request
+        # query: 'pushState'
+        
+        load: ->
           o = _.State
           if history.state?
             history.replaceState true, null
@@ -427,16 +437,10 @@ if not Extrascore? and jQuery? and _? and _.str?
               o.change url
             else
               o.before url
-              o.xhr = $.get("#{url}#{if '?' in url then '&' else '?'}#{o.query}", null, (data) ->
-                if data.startsWith o.prefix
-                  o.updateCache url,
-                    title: /^[^\n]*\n([^\n]*)\n/.exec(data)[1]
-                    #[\s\S] is synonymous with . except that the JS . doesn't match \n like [\s\S] does
-                    html: /^(?:[^\n]*\n){2}([\s\S]*)$/.exec(data)[1]
-                  o.after url
-                  o.change url
-                else
-                  location.assign url
+              o.xhr = $.getJSON(url+(if o.query then (if '?' in url then '&' else '?')+o.query else ''), null, (data) ->
+                o.updateCache url, data
+                o.after url
+                o.change url
               ).error -> location.assign url
           else
             location.assign url
