@@ -16,8 +16,8 @@ if not Extrascore? and jQuery? and _? and _.str?
     Mixins:
     
       # Mass method call for every child of obj
-      mass: (obj, str) ->
-        _.each obj, (val) -> val?[str]?()
+      mass: (obj, str, args...) ->
+        _.each obj, (val) -> val?[str]?(args...)
           
       # Initialize an object by calling init on children and then assigning the load method to jQuery's DOM ready call
       init: (obj) ->
@@ -28,12 +28,12 @@ if not Extrascore? and jQuery? and _? and _.str?
       load: (obj) ->
         _.mass obj, 'load'
         _.dom obj
-        $('body').on 'DOMSubtreeModified', -> _.dom obj unless obj.domLocked
+        $('body').on 'DOMSubtreeModified', (e) -> _.dom obj, e unless obj.domLocked
         
       # Call on every DOMSubtreeModified event (use carefully, doesn't work in Opera *shocking*)
-      dom: (obj) ->
+      dom: (obj, e) ->
         obj.domLocked = true
-        _.mass obj, 'dom'
+        _.mass obj, 'dom', e
         obj.domLocked = false
       
       # Clean a string for use in a URL or query
@@ -98,8 +98,7 @@ if not Extrascore? and jQuery? and _? and _.str?
               $(@).each -> $(@)._val str
             else
               if $(@).data 'empty' then '' else $(@)._val()
-          delete _.Placeholder.load
-        
+                  
         # Check for new inputs or textareas than need to be initialized with Placeholder
         dom: ->
           $('input[data-placeholder], textarea[data-placeholder]').each ->
@@ -154,8 +153,7 @@ if not Extrascore? and jQuery? and _? and _.str?
                   else return true
                 false
             o.correctUi()
-            delete o.load;
-        
+                    
         # Match the PopUp size to the window
         correctUi: ->
           _.PopUp.$td.width($(window).width()).height $(window).height()
@@ -193,10 +191,10 @@ if not Extrascore? and jQuery? and _? and _.str?
                 lastQ: null
                 page: 0
                 holdHover: false
-                q: $search.find('.q').attr(autocomplete: 'off')
-                results: $search.find '.results'
-              $q = $search.data('q')
-              $results = $search.data 'results'
+                $q: $search.find('.q').attr(autocomplete: 'off')
+                $results: $search.find '.results'
+              $q = $search.data('$q')
+              $results = $search.data '$results'
               o.query $search if $q.is ':focus'
               $search.hover(->
                 $search.data hover: true
@@ -252,7 +250,7 @@ if not Extrascore? and jQuery? and _? and _.str?
         page: ($searches, n, prev) ->
           $searches.each ->
             $search = $ @
-            $results = $search.data 'results'
+            $results = $search.data '$results'
             n = Math.min $results.find('.page').length-1, Math.max n, 0
             $results.find('.result.selected').removeClass 'selected'
             $results.find('.page').css('display', 'none').eq(n).removeAttr('style').find('.result:not(.prev):not(.next)')[if prev then 'last' else 'first']().addClass 'selected'
@@ -263,8 +261,8 @@ if not Extrascore? and jQuery? and _? and _.str?
           $searches.each ->
             o = _.Search
             $search = $ @
-            $results = $search.data 'results'
-            $q = $search.data 'q'
+            $results = $search.data '$results'
+            $q = $search.data '$q'
             callback = eval $search.data('search')
             q = o.parseQuery $q.val()
             t = new Date().getTime()
@@ -329,68 +327,133 @@ if not Extrascore? and jQuery? and _? and _.str?
            
       # Yay tooltips!
       Tooltip:
+      
+        # Store mouse coordinates
+        mouse:
+          x: 0
+          y: 0
+      
+        # Set mousemove on document to track coordinates
         load: ->
-          $('body').on 'mouseenter focus', '*[data-tooltip]', (e) ->
+          o = _.Tooltip
+          $('body').mousemove (e) ->
+            o.mouse =
+              x: e.pageX
+              y: e.pageY
+            $('*[data-tooltip]').each ->
+              $t = $ @
+              if $t.data('$div')? and $t.data('position') is 'mouse'
+                $t.data('$div').css o.position($t).base
+                  
+        dom: ->
+          $('*[data-tooltip]').each ->
+            o = _.Tooltip
             $t = $ @
-            unless $t.data('hover') or $t.is ':focus'
-              pos = $t.data('position') ? 'top'
-              offset = $t.data('offset') ? 0
-              duration = $t.data('duration') ? 0
-              $div = $t.data 'div'
-              unless $div
-                $div = $t.data(div: $ """<div class="_tooltip #{pos}"/>""").data 'div'
-                $t.parent().append $div
-              $div.html $t.data 'tooltip'
-              tL = $t.position().left+parseInt $t.css 'marginLeft'
-              tT = $t.position().top+parseInt $t.css 'marginTop'
-              hW = ($t.outerWidth()-$div.outerWidth())/2
-              hH = ($t.outerHeight()-$div.outerHeight())/2
-              dir =
-                top:
-                  left: hW
-                  top: -$div.outerHeight()
-                  dLeft: 0
-                  dTop: 1
-                right:
-                  left: $t.outerWidth()
-                  top: hH
-                  dLeft: -1
-                  dTop: 0
-                bottom:
-                  left: hW
-                  top: $t.outerHeight()
-                  dLeft: 0
-                  dTop: -1
-                left:
-                  left: -$div.outerWidth()
-                  top: hH
-                  dLeft: 1
-                  dTop: 0
-              homeLeft = tL+dir[pos].left
-              homeTop = tT+dir[pos].top
-              offsetLeft = homeLeft-dir[pos].dLeft*offset
-              offsetTop = homeTop-dir[pos].dTop*offset
-              $div.css(
-                left: offsetLeft
-                top: offsetTop
-                opacity: 0
-                display: 'block'
-              ).stop().animate
-                left: homeLeft
-                top: homeTop
-                opacity: 1
-              , duration
-              $t.on 'mouseleave blur', (e) ->
-                $t.data 'hover', false if e.type is 'mouseleave'
-                unless $t.data('hover') or $t.is ':focus'
-                  $div.stop().animate(
-                    left: offsetLeft
-                    top: offsetTop
-                    opacity: 0
-                  , duration
-                  , -> $(@).css display: 'none').off e
-            $t.data 'hover', true if e.type is 'mouseenter'
-          delete _.Tooltip.load;
+            unless $t.data('$div')?
+              $t.parent().css position: 'relative' if $t.parent().css position: 'static'
+              $t.data _.extend
+                position: 'top',
+                hoverable: false,
+                offset: 0,
+                duration: 0,
+              , $t.data()
+              $div = $('<div><div/></div>').addClass("_tooltip #{$t.data('position')}");
+              $div.find('> div')
+                .html($t.data('tooltip'))
+              $t.data($div: $div)
+                .parent()
+                .append $div
+              position = o.position($t)
+              $div.css(position.base)
+                .find('> div')
+                .css _.extend {opacity: 0}, position.from
+              $div.css pointerEvents: 'none' if not $t.data('hoverable')
+              $t.on('mouseenter focus', o.mouseenterFocusEvent)
+              .on 'mouseleave blur', o.mouseleaveBlurEvent
+              
+        # Bound to 'mouseenter focus'
+        mouseenterFocusEvent: (e) ->
+          $t = $ @
+          unless $t.data('hover') or $t.is(':focus')
+            position = _.Tooltip.position($t)
+            $t.data('$div')
+              .appendTo($t.parent())
+              .css(_.extend {display: 'block'}, position.base)
+              .find('> div')
+              .stop()
+              .animate _.extend({opacity: 1}, position.to),
+                duration: $t.data 'duration'
+          $t.data 'hover', true if e.type is 'mouseenter'
+        
+        # Bound to 'mouseleave blur'
+        mouseleaveBlurEvent: (e) ->
+          $t = $ @
+          $t.data 'hover', false if e.type is 'mouseleave'
+          unless $t.data('hover') or $t.is ':focus'
+            position = _.Tooltip.position($t)
+            $t.data('$div')
+              .css(position.base)
+              .find('> div')
+              .stop()
+              .animate _.extend({opacity: 0}, position.from),
+                duration: $t.data 'duration'
+                complete: -> $(@).parent().css display: 'none'
+        
+        # Method for getting the correct CSS position data for a tooltip
+        position: ($t) ->
+          o = _.Tooltip
+          $div = $t.data('$div')
+          offset = $t.data('offset')
+          tPosition = $t.position()
+          tLeft = tPosition.left+parseInt $t.css 'marginLeft'
+          tTop = tPosition.top+parseInt $t.css 'marginTop'
+          tWidth = $t.outerWidth()
+          tHeight = $t.outerHeight()
+          divWidth = $div.outerWidth()
+          divHeight = $div.outerHeight()
+          base =
+            left: tLeft
+            top: tTop
+          switch $t.data('position')
+            when 'top'
+              to =
+                left: (tWidth-divWidth)/2
+                top: -divHeight
+              from =
+                left: to.left
+                top: to.top-offset
+            when 'right'
+              to =
+                left: tWidth
+                top: (tHeight-divHeight)/2
+              from =
+                left: to.left+offset
+                to: to.top
+            when 'bottom'
+              to =
+                left: (tWidth-divWidth)/2
+                top: tHeight
+              from =
+                left: to.left
+                top: to.top+offset
+            when 'left'
+              to =
+                left: -divWidth
+                top: (tHeight-divHeight)/2
+              from =
+                left: to.left-offset
+                top: to.top
+            when 'mouse'
+              base =
+                left: o.mouse.x-$t.parent().offset().left
+                top: o.mouse.y-$t.parent().offset().top
+              to =
+                left: -divWidth/2
+                top: -divHeight
+              from =
+                left: to.left
+                top: to.top-offset
+          {base: base, to: to, from: from}
       
       #
       # Looking into Backbone as a replacement for my lovely State class
@@ -400,10 +463,10 @@ if not Extrascore? and jQuery? and _? and _.str?
         cache: {}
         
         # The attributes below are optional and can be set at runtime as needed
-        #
+        
         # When true, forces State to reload the page on the next request.
         # refresh: false
-        #
+        
         # Specify a query parameter to send with the XHR request
         # query: 'pushState'
         
@@ -420,8 +483,7 @@ if not Extrascore? and jQuery? and _? and _.str?
             $t = $ @
             o.push if $t.data 'url' then $t.data 'url' else $t.attr 'href'
             false
-          delete o.init;
-        updateCache: (url, obj) ->
+                  updateCache: (url, obj) ->
           o = _.State
           if o.cache[url]?
             _.extend o.cache[url], obj
@@ -439,7 +501,6 @@ if not Extrascore? and jQuery? and _? and _.str?
               o.before url
               o.xhr = $.getJSON(url+(if o.query then (if '?' in url then '&' else '?')+o.query else ''), null, (data) ->
                 o.updateCache url, data
-                console.log o.cache
                 o.after url
                 o.change url
               ).error -> location.assign url
@@ -463,8 +524,7 @@ if not Extrascore? and jQuery? and _? and _.str?
         load: ->
           o = _.Lazy
           $(window).on 'scroll resize', o.dom
-          delete o.load;
-          
+                    
         # Check for new lazy images
         dom: ->
           $('img[data-lazy]').each ->

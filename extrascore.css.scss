@@ -16,6 +16,12 @@
 }
 
 ._tooltip {
-  z-index: 999999;
+  display: none;
   position: absolute;
+  z-index: 999999;
+  
+  > div {
+    position: relative;
+  }
+  
 }
