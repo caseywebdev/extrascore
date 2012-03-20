@@ -537,6 +537,10 @@ if not Extrascore? and jQuery? and _? and _.str?
               home.top += (tHeight-divHeight)/2
               away.left = -offset
           {home: home, away: away}
+        
+        # Use this to correct the placeholder positioning between events if necessary
+        correct: ($t) ->
+          $t.data('tooltip$Div').css _.Tooltip.position($t).home
       
       #
       # Looking into Backbone as a replacement for my lovely State class
