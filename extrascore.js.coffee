@@ -399,10 +399,12 @@ if not Extrascore? and jQuery? and _? and _.str?
               $t.parent().css position: 'relative' if $t.parent().css position: 'static'
               $t.data hoverable: null if $t.data('mouse')?
               $t.data _.extend
-                position: 'top',
-                offset: 0,
-                duration: 0,
-                mouse: null,
+                position: 'top'
+                offset: 0
+                duration: 0
+                noHover: null
+                noFocus: null
+                mouse: null
                 hoverable: null
               , $t.data()
               $div = $('<div><div/></div>')
@@ -425,16 +427,27 @@ if not Extrascore? and jQuery? and _? and _.str?
                 .css(position.home)
                 .find('> div')
                 .css _.extend {opacity: 0}, position.away
-              $t
-                .on('mouseenter focus', (e) ->
-                  _.Tooltip.show $t
-                  $t.data 'hover', true if e.type is 'mouseenter')
-                .on 'mouseleave blur', (e) ->
-                  $t.data 'hover', false if e.type is 'mouseleave'
-                  _.Tooltip.hide $t
+              
+              # Bind hover if noHover isn't set
+              unless $t.data('noHover')?
+                $t
+                  .hover (e) ->
+                    _.Tooltip.show $t
+                    $t.data 'hover', true
+                  , (e) ->
+                    $t.data 'hover', false
+                    _.Tooltip.hide $t
+              
+              # Bind focus/blur if noFocus isn't set
+              unless $t.data('noFocus')?
+                $t
+                  .focus((e) ->
+                    _.Tooltip.show $t)
+                  .blur (e) ->
+                    _.Tooltip.hide $t
               
               # If the tooltip is 'hoverable' (aka it should stay while the mouse is over the tooltip itself)
-              if $t.data('hoverable')? and not $t.data('mouse')?
+              if $t.data('hoverable')?
                 $div.hover ->
                   _.Tooltip.show $t
                   $(@).data hover: true
@@ -453,7 +466,9 @@ if not Extrascore? and jQuery? and _? and _.str?
         # Show the tooltip if it's not already visible
         show: ($t) ->
           $div = $t.data '$div'
-          unless $t.data('hover') or $t.is(':focus') or $div.data 'hover'
+          unless  (not $t.data('noHover')? and $t.data 'hover') or
+                  (not $t.data('noFocus')? and $t.is ':focus') or
+                  $div.data 'hover'
             position = _.Tooltip.position($t)
             $div
               .appendTo($t.parent())
@@ -469,7 +484,9 @@ if not Extrascore? and jQuery? and _? and _.str?
         # Hide the tooltip if it's not already hidden
         hide: ($t) ->
           $div = $t.data '$div'
-          unless $t.data('hover') or $t.is ':focus' or $div.data 'hover'
+          unless  (not $t.data('noHover')? and $t.data 'hover') or
+                  (not $t.data('noFocus')? and $t.is ':focus') or
+                  $div.data 'hover'
             position = _.Tooltip.position($t)
             $div
               .css(position.home)
