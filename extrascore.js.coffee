@@ -50,7 +50,7 @@ if not Extrascore? and jQuery? and _? and _.str?
         str = str+''
         str = str.toLowerCase() if opt.downcase
         str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
-        _.strip(str.replace /\s+/, ' ').replace /\ /g, opt.delimiter
+        _.strip(str.replace /\s+/g, ' ').replace /\ /g, opt.delimiter
       
       # Sort an object by key for iteration
       sortByKey: (obj) ->
@@ -249,9 +249,9 @@ if not Extrascore? and jQuery? and _? and _.str?
               $results = $search.data 'search$Results'
               o.query $search if $q.is ':focus'
               $search.hover(->
-                $search.data searchHoldHover: true
+                $search.data searchHover: true
               , ->
-                $search.data searchHoldHover: false
+                $search.data searchHover: false
                 $results.css display: 'none' unless $q.is(':focus') or $search.data 'searchHoldHover'
               ).mouseover ->
                 $search.data searchHoldHover: false
@@ -279,18 +279,18 @@ if not Extrascore? and jQuery? and _? and _.str?
                 false
               ).on 'focus keyup change', ->
                 o.query $search
-              $results.on 'mouseenter click', '.result', ->
+              $results.on 'mouseenter click', '.result', (e) ->
                 $t = $ @
                 $results.find('.result.selected').removeClass 'selected'
                 $t.addClass 'selected'
                 if e.type is 'click'
-                  if $t.data('searchPrev')?
+                  if $t.is('.prev')
                     o.page $search, $search.data('searchPage')-1, true
                     $search.data searchHoldHover: true
-                  else if  $t.data('searchNext')?
+                  else if $t.is('.next')
                     o.page $search, $search.data('searchPage')+1
                     $search.data searchHoldHover: true
-                  else if $t.data('searchSubmit')?
+                  else if $t.is('.submit')
                     $t.parents('form').submit()
                   if $t.data('searchHide')?
                     $q.blur()
@@ -301,9 +301,9 @@ if not Extrascore? and jQuery? and _? and _.str?
           $searches.each ->
             $search = $ @
             $results = $search.data 'search$Results'
-            n = Math.min $results.find('*[data-search-page]').length-1, Math.max n, 0
+            n = Math.min $results.find('.page').length-1, Math.max n, 0
             $results.find('.result.selected').removeClass 'selected'
-            $results.find('*[data-search-page]').css(display: 'none').eq(n).removeAttr('style').find('.result:not([data-search-prev]):not([data-search-next])')[if prev then 'last' else 'first']().addClass 'selected'
+            $results.find('.page').css(display: 'none').eq(n).removeAttr('style').find('.result:not(.prev):not(.next)')[if prev then 'last' else 'first']().addClass 'selected'
             $search.data 'searchPage', n
         
         # Send the value of q to the correct search function and return the result to the correct callback
@@ -317,8 +317,7 @@ if not Extrascore? and jQuery? and _? and _.str?
             q = o.parseQuery $q.val(), $search.data('searchColonSplitQuery')?
             t = new Date().getTime()
             $results.css display: 'block'
-            empty = 'searchEmpty' of $search.data
-            unless q or empty
+            unless q or $search.data('searchEmpty')?
               $results.css(display: 'none').html ''
               $search.removeClass 'loading'
             else if q isnt $search.data('searchLastQ') or urlN > 1
@@ -334,11 +333,11 @@ if not Extrascore? and jQuery? and _? and _.str?
                   setTimeout ->
                     handleData = (data) ->
                       $search.data('searchCache')["#{urlN}_"+q] = data
-                      if check is $search.data('searchId') and o.parseQuery($q.val()) or empty
+                      if check is $search.data('searchId') and o.parseQuery($q.val()) or $search.data('searchEmpty')?
                         $search.removeClass 'loading'
                         callback $search, data, urlN
                       o.query $search, urlN+1 if $search.data 'searchUrl'+(urlN+1)
-                    check = $search.data(searchId: $search.data('id')+1).data 'searchId'
+                    check = $search.data(searchId: $search.data('searchId')+1).data 'searchId'
                     if $search.data('searchJs')?
                       handleData eval($search.data 'searchJs')(q)
                     else if $search.data('searchUrl')?
@@ -353,9 +352,9 @@ if not Extrascore? and jQuery? and _? and _.str?
             $search = $ @
             $page = $search.find('.page').eq $search.data 'searchPage'
             $page.find('.result')[if dir is 'prev' then 'first' else 'last']().addClass 'selected' unless $page.find('.result.selected').removeClass('selected')[dir]().addClass('selected').length
-            if $page.find('.result.selected').data('searchPrev')?
+            if $page.find('.result.selected.prev').length
               o.page $search, $search.data('searchPage')-1, true
-            else if $page.find('.result.selected').data('searchNext')?
+            else if $page.find('.result.selected.next').length
               o.page $search, $search.data('searchPage')+1
       
         # Break a query up into components if colons are used
