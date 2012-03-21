@@ -122,7 +122,9 @@ if not Extrascore? and jQuery? and _? and _.str?
                   $t[0].type = '' if password
                 else
                   $t.data PLACEHOLDER_EMPTY, false
-                $t.attr placeholder: placeholder, title: placeholder
+                $t.attr
+                  placeholder: placeholder
+                  title: placeholder
                 $t.focus(->
                   $t.val '' if $t.data PLACEHOLDER_EMPTY
                   if password
@@ -542,9 +544,9 @@ if not Extrascore? and jQuery? and _? and _.str?
               away.left = -offset
           {home: home, away: away}
         
-        # Use this to correct the placeholder positioning between events if necessary
+        # Use this to correct the placeholder content and positioning between events if necessary
         correct: ($t) ->
-          $t.data('tooltip$Div').css _.Tooltip.position($t).home
+          $t.data('tooltip$Div').html($t.data('tooltip')).css _.Tooltip.position($t).home
       
       #
       # Looking into Backbone as a replacement for my lovely State class
