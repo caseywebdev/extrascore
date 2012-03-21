@@ -151,36 +151,38 @@ if not Extrascore? and jQuery? and _? and _.str?
             # Shortcut
             o = _.PopUp;
 
-            # Until 'display: box' becomes more widely available, we're stuck with tables for cross-browser centering
-            $('body').append o.$table =
-              $('<table><tbody><tr><td><div/></td></tr></tbody></table>')
+            # Until 'display: box' becomes more widely available, we're stuck with line-height and vertical-align
+            $('body').append o.$container =
+              $('<div><div><div/></div></div>')
                 .attr(
-                  id: 'pop-up-table')
+                  id: 'pop-up-container')
                 .css
                   display: 'none'
                   position: 'fixed'
                   zIndex: 999999
                   left: 0
                   top: 0
-                  borderCollapse: 'collapse'
                   opacity: 0
-            o.hide()
-            o.$td =
-              o.$table.find('td')
-                .css
                   textAlign: 'center'
-                  verticalAlign: 'middle'
+            o.hide()
             o.$div =
-              o.$td.find('div')
-                .attr
-                  id: 'pop-up'
+              o.$container.find('> div')
+                .attr(
+                  id: 'pop-up')
+                .css
+                  display: 'inline-block'
+                  # IE inline-block hack...
+                  '*zoom': 1
+                  '*display': 'inline'
+                  verticalAlign: 'middle'
+                  lineHeight: 'normal'
             $(window).on 'scroll resize orientationchange', o.correct
-            o.$td.on 'click', -> o.$div.find('*[data-pop-up-outside]').click()
+            o.$container.on 'click', -> o.$div.find('*[data-pop-up-outside]').click()
             o.$div
               .on('click', false)
               .on 'click', '*[data-pop-up-hide]', o.hide
             $(document).keydown (e) ->
-              if o.$table.css('display') is 'block' and not $('body :focus').length
+              if o.$container.css('display') is 'block' and not $('body :focus').length
                 switch e.keyCode
                   when 13 then o.$div.find('*[data-pop-up-enter]').click()
                   when 27 then o.$div.find('*[data-pop-up-esc]').click()
@@ -190,17 +192,20 @@ if not Extrascore? and jQuery? and _? and _.str?
                     
         # Match the PopUp size to the window
         correct: ->
-          _.PopUp.$td.width($(window).width()).height $(window).height()
+          _.PopUp.$container
+            .css
+              width: $(window).width()
+              lineHeight: "#{$(window).height()}px"
           
         # Fade the PopUp out
         hide: (fadeDuration) ->
           o = _.PopUp
-          o.$table
+          o.$container
             .stop()
             .animate
               opacity: 0
-            , (if isNaN(fadeDuration) then o.$table.data('fadeDuration') else fadeDuration)
-            , -> o.$table.css display: 'none'
+            , (if isNaN(fadeDuration) then o.fadeDuration else fadeDuration)
+            , -> o.$container.css display: 'none'
           
         # Show the PopUp with the given `html`, optionally for a duration
         show: (html, opt = {}) ->
@@ -211,10 +216,9 @@ if not Extrascore? and jQuery? and _? and _.str?
             fadeDuration: o.FADE_DURATION
           , opt
           $('body :focus').blur()
+          o.fadeDuration = opt.fadeDuration
           o.$div.html html
-          o.$table
-            .data(
-              fadeDuration: opt.fadeDuration)
+          o.$container
             .stop()
             .css(
               display: 'block')
