@@ -156,10 +156,9 @@ if not Extrascore? and jQuery? and _? and _.str?
         
         # Build the PopUp element
         build: ->
-          unless $('#pop-up').length
-          
-            # Shortcut
-            o = _.PopUp;
+          # Shortcut
+          o = _.PopUp;
+          unless o.built
 
             # Until 'display: box' becomes more widely available, we're stuck with line-height and vertical-align
             $('body').append o.$container =
@@ -198,6 +197,7 @@ if not Extrascore? and jQuery? and _? and _.str?
                   when 27 then o.$div.find('*[data-pop-up-esc]').click()
                   else return true
                 false
+            o.built = true
             o.correct()
                     
         # Match the PopUp size to the window
