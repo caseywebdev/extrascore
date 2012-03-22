@@ -68,23 +68,28 @@ if not Extrascore? and jQuery? and _? and _.str?
         $(if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
       
       # Get a full URL from a relative url
-      url: (path = '') ->
-          
-          # See if it's already a URL
-          if path.match /^\w+:/
-            path
-          
+      url: (path = '', protocol = location.protocol) ->
+        
+        # Append a colon to the protocol if necessary
+        protocol += ':' unless _.endsWith protocol, ':'
+        
+        # See if it's already a URL
+        unless path.match /^\w+:/
+        
           # See if it's a URL looking for a protocol
-          else if _.startsWith path, '//'
-            location.protocol+path
+          if _.startsWith path, '//'
+            path = location.protocol+path
           
           # See if it's relative to the domain root
           else if _.startsWith path, '/'
-            location.protocol+'//'+location.host+path
+            path = location.protocol+'//'+location.host+path
             
           # Otherwise it must be relative to the current location
           else
-            location.href+path
+            path = location.href+path
+        
+        # Swap the protocols if necessary
+        path.replace location.protocol, protocol
     
     # Extensions for Underscore (more of individual classes using Underscore for the namespace then actual extentions)
     Extensions:
@@ -555,8 +560,13 @@ if not Extrascore? and jQuery? and _? and _.str?
           {home: home, away: away}
         
         # Use this to correct the placeholder content and positioning between events if necessary
-        correct: ($t) ->
-          $t.data('tooltip$Div').html($t.data('tooltip')).css _.Tooltip.position($t).home
+        correct: ($ts) ->
+          $ts.each ->
+            $t = $ @
+            $div = $t.data 'tooltip$Div'
+            if $div
+              $div.find('> div').html($t.data('tooltip'))
+              $div.css _.Tooltip.position($t).home
       
       #
       # Looking into Backbone as a replacement for my lovely State class
@@ -584,7 +594,7 @@ if not Extrascore? and jQuery? and _? and _.str?
               history.replaceState true, null
           $("body").on 'click', '*[data-state]', ->
             $t = $ @
-            o.push if $t.data 'stateUrl' then $t.data 'stateUrl' else $t.attr 'href'
+            o.push (if $t.data 'stateUrl' then $t.data 'stateUrl' else $t.attr 'href'), $t.data 'stateProtocol'
             false
         updateCache: (url, obj) ->
           o = _.State
@@ -592,10 +602,10 @@ if not Extrascore? and jQuery? and _? and _.str?
             _.extend o.cache[url], obj
           else
             o.cache[url] = obj
-        push: (url) ->
+        push: (url, protocol = location.protocol) ->
           o = _.State
-          url = _.url url
-          if location.protocol is url.match(/^\w+:/)[0] and history.pushState? and not o.refresh
+          url = _.url url, protocol
+          if history.pushState? and not o.refresh and _.startsWith url, location.protocol
             o.xhr.abort?()
             o.clear o.cache[url], url
             if o.cache[url]? and o.cache[url].cache isnt false
