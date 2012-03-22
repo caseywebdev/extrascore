@@ -1,13 +1,10 @@
-###! Extrascore (requires jQuery, Underscore and Underscore.string) by Casey Foster (caseywebdev.com) ###
+###! Extrascore (requires jQuery and Underscore) by Casey Foster (caseywebdev.com) ###
 
 # Check dependencies
-if not Extrascore? and jQuery? and _? and _.str?
+if not Extrascore? and jQuery? and _?
   
   # Use the jQuery shortcut
   $ = jQuery
-  
-  # Mixin Underscore.string
-  _.mixin _.str.exports()
   
   # Define the Extrascore object
   window.Extrascore =
@@ -50,7 +47,19 @@ if not Extrascore? and jQuery? and _? and _.str?
         str = str+''
         str = str.toLowerCase() if opt.downcase
         str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
-        _.strip(str.replace /\s+/g, ' ').replace /\ /g, opt.delimiter
+        $.trim(str.replace /\s+/g, ' ').replace /\ /g, opt.delimiter
+      
+      # This sucker comes in handy
+      startsWith: (str, start) ->
+        str = str+''
+        start = start+''
+        return start.length <= str.length and str.substr(0, start.length) is start
+      
+      # This guys too
+      endsWith: (str, end) ->
+        str = str+''
+        end = end+''
+        return end.length <= str.length and str.substr(-end.length) is end      
       
       # Sort an object by key for iteration
       sortByKey: (obj) ->
@@ -422,7 +431,8 @@ if not Extrascore? and jQuery? and _? and _.str?
           ).on('blur', '*[data-tooltip]:not([data-tooltip-no-focus])', ->
             o.hide $ @
           )
-            
+        
+        # Get the current tooltip$Div for an item or create a new one and return that
         divFor: ($t) ->
           o = _.Tooltip
           unless $t.data 'tooltip$Div'
@@ -499,25 +509,25 @@ if not Extrascore? and jQuery? and _? and _.str?
         # Hide the tooltip if it's not already hidden
         hide: ($t) ->
           o = _.Tooltip
-          $div = o.divFor $t
-          unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
-                  (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
-                  $t.data 'tooltipHoverableHover'
-            position = o.position($t)
-            $div
-              .css(position.home)
-              .find('> div')
-              .stop()
-              .animate _.extend({opacity: 0}, position.away),
-                duration: $t.data 'tooltipDuration'
-                complete: ->
-                  $t.data tooltip$Div: null
-                  $(@).parent().remove()
+          if $div = $t.data 'tooltip$Div'
+            unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
+                    (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
+                    $t.data 'tooltipHoverableHover'
+              position = o.position($t)
+              $div
+                .css(position.home)
+                .find('> div')
+                .stop()
+                .animate _.extend({opacity: 0}, position.away),
+                  duration: $t.data 'tooltipDuration'
+                  complete: ->
+                    $t.data tooltip$Div: null
+                    $(@).parent().remove()
         
         # Method for getting the correct CSS position data for a tooltip
         position: ($t) ->
           o = _.Tooltip
-          $div = o.divFor $t
+          $div = $t.data 'tooltip$Div'
           offset = $t.data 'tooltipOffset'
           divWidth = $div.outerWidth()
           divHeight = $div.outerHeight()
@@ -555,11 +565,14 @@ if not Extrascore? and jQuery? and _? and _.str?
           {home: home, away: away}
         
         # Use this to correct the placeholder content and positioning between events if necessary
-        correct: ($ts) ->
-          $ts.each ->
-            $t = $ @
-            $div = $t.data 'tooltip$Div'
-            if $div
+        correct: ($t) ->
+          o = _.Tooltip
+          $div = $t.data 'tooltip$Div'
+          if $div
+            if $t.css('display') is 'none'
+              console.log 'yip'
+              $t.mouseleave().blur()
+            else
               $div.find('> div').html($t.data('tooltip'))
               $div.css _.Tooltip.position($t).home
       
