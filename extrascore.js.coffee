@@ -146,8 +146,11 @@ if not Extrascore? and jQuery? and _? and _.str?
         DURATION: 0
         FADE_DURATION: 250
         
-        # After the DOM is load
-        load: ->
+        # Has the PopUp element been built yet?
+        built: false
+        
+        # Build the PopUp element
+        build: ->
           unless $('#pop-up').length
           
             # Shortcut
@@ -194,24 +197,31 @@ if not Extrascore? and jQuery? and _? and _.str?
                     
         # Match the PopUp size to the window
         correct: ->
-          _.PopUp.$container
-            .css
-              width: $(window).width()
-              lineHeight: "#{$(window).height()}px"
+          o = _.PopUp
+          if o.built
+            o.$container
+              .css
+                width: $(window).width()
+                lineHeight: "#{$(window).height()}px"
           
         # Fade the PopUp out
         hide: (fadeDuration) ->
           o = _.PopUp
-          o.$container
-            .stop()
-            .animate
-              opacity: 0
-            , (if isNaN(fadeDuration) then o.fadeDuration else fadeDuration)
-            , -> o.$container.css display: 'none'
+          if o.built
+            o.$container
+              .stop()
+              .animate
+                opacity: 0
+              , (if isNaN(fadeDuration) then o.fadeDuration else fadeDuration)
+              , -> o.$container.css display: 'none'
           
         # Show the PopUp with the given `html`, optionally for a duration
         show: (html, opt = {}) ->
           o = _.PopUp
+          
+          # Build the PopUp element if it doesn't exist yet
+          unless o.built
+            o.build()
           opt = _.extend
             duration: o.DURATION
             callback: null
