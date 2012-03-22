@@ -151,21 +151,18 @@ if not Extrascore? and jQuery? and _? and _.str?
         DURATION: 0
         FADE_DURATION: 250
         
-        # Has the PopUp element been built yet?
-        built: false
-        
         # Build the PopUp element
         build: ->
           # Shortcut
           o = _.PopUp;
-          unless o.built
-
+          unless $('#pop-up-container').length
+            
             # Until 'display: box' becomes more widely available, we're stuck with line-height and vertical-align
             $('body').append o.$container =
               $('<div><div><div/></div></div>')
                 .attr(
-                  id: 'pop-up-container')
-                .css
+                  id: 'pop-up-container'
+                ).css
                   display: 'none'
                   position: 'fixed'
                   zIndex: 999999
@@ -177,8 +174,8 @@ if not Extrascore? and jQuery? and _? and _.str?
             o.$div =
               o.$container.find('> div')
                 .attr(
-                  id: 'pop-up')
-                .css
+                  id: 'pop-up'
+                ).css
                   display: 'inline-block'
                   lineHeight: 'normal'
                   verticalAlign: 'middle'
@@ -197,13 +194,12 @@ if not Extrascore? and jQuery? and _? and _.str?
                   when 27 then o.$div.find('*[data-pop-up-esc]').click()
                   else return true
                 false
-            o.built = true
             o.correct()
                     
         # Match the PopUp size to the window
         correct: ->
           o = _.PopUp
-          if o.built
+          if o.$container?
             o.$container
               .css
                 width: $(window).width()
@@ -212,7 +208,7 @@ if not Extrascore? and jQuery? and _? and _.str?
         # Fade the PopUp out
         hide: (fadeDuration) ->
           o = _.PopUp
-          if o.built
+          if o.$container?
             o.$container
               .stop()
               .animate
@@ -224,9 +220,9 @@ if not Extrascore? and jQuery? and _? and _.str?
         show: (html, opt = {}) ->
           o = _.PopUp
           
-          # Build the PopUp element if it doesn't exist yet
-          unless o.built
-            o.build()
+          # Build the PopUp element
+          o.build()
+          
           opt = _.extend
             duration: o.DURATION
             callback: null
@@ -397,7 +393,7 @@ if not Extrascore? and jQuery? and _? and _.str?
            
       # Yay tooltips!
       Tooltip:
-      
+        
         # Store mouse coordinates
         mouse:
           x: 0
@@ -406,93 +402,89 @@ if not Extrascore? and jQuery? and _? and _.str?
         # Set mousemove on document to track coordinates
         load: ->
           o = _.Tooltip
-          $('body').mousemove (e) ->
+          $('body').mousemove((e) ->
             o.mouse =
               x: e.pageX
               y: e.pageY
             $('*[data-tooltip]').each ->
               $t = $ @
               $t.data('tooltip$Div').css o.position($t).home if $t.data('tooltip$Div')? and $t.data('tooltipMouse')?
-                  
-        dom: ->
-          $('*[data-tooltip]').each ->
-            o = _.Tooltip
+          ).on('mouseenter', '*[data-tooltip]:not([data-tooltip-no-hover])', ->
             $t = $ @
-            unless $t.data('tooltip$Div')?
-              $t.parent().css position: 'relative' if $t.parent().css position: 'static'
-              $t.data tooltipHoverable: null if $t.data('tooltipMouse')?
-              $t.data _.extend
-                tooltipPosition: 'top'
-                tooltipOffset: 0
-                tooltipDuration: 0
-                tooltipNoHover: null
-                tooltipNoFocus: null
-                tooltipMouse: null
-                tooltipHoverable: null
-              , $t.data()
-              $div = $('<div><div/></div>')
-                .addClass("tooltip #{$t.data('tooltipPosition')}")
-                .css
-                  display: 'none'
-                  position: 'absolute'
-                  zIndex: 999999;
-              $div
-                .find('> div')
-                .html($t.data('tooltip'))
-                .css
-                  position: 'relative'
-              $t
-                .data(tooltip$Div: $div)
-                .parent()
-                .append $div
-              position = o.position($t)
-              $div
-                .css(position.home)
-                .find('> div')
-                .css _.extend {opacity: 0}, position.away
-              
-              # Bind hover if noHover isn't set
-              unless $t.data('tooltipNoHover')?
-                $t
-                  .hover (e) ->
-                    _.Tooltip.show $t
-                    $t.data tooltipHover: true
-                  , (e) ->
-                    $t.data tooltipHover: false
-                    _.Tooltip.hide $t
-              
-              # Bind focus/blur if noFocus isn't set
-              unless $t.data('tooltipNoFocus')?
-                $t
-                  .focus((e) ->
-                    _.Tooltip.show $t)
-                  .blur (e) ->
-                    _.Tooltip.hide $t
-              
-              # If the tooltip is 'hoverable' (aka it should stay while the mouse is over the tooltip itself)
-              if $t.data('tooltipHoverable')?
-                $div.hover ->
-                  _.Tooltip.show $t
-                  $t.data tooltipHoverableHover: true
-                , ->
-                  $t.data tooltipHoverableHover: false
-                  _.Tooltip.hide $t
-              else
-              
-                # Otherwise turn off interaction with the mouse
-                $div.css
-                  pointerEvents: 'none'
-                  '-webkit-user-select': 'none'
-                  '-moz-user-select': 'none'
-                  userSelect: 'none'
-                      
+            o.show $t
+            $t.data tooltipHover: true
+          ).on('mouseleave', '*[data-tooltip]:not([data-tooltip-no-hover])', ->
+            $t = $ @
+            $t.data tooltipHover: false
+            o.hide $t
+          ).on('focus', '*[data-tooltip]:not([data-tooltip-no-focus])', ->
+            o.show $ @
+          ).on('blur', '*[data-tooltip]:not([data-tooltip-no-focus])', ->
+            o.hide $ @
+          )
+            
+        divFor: ($t) ->
+          o = _.Tooltip
+          unless $t.data 'tooltip$Div'
+            $t.parent().css position: 'relative' if $t.parent().css position: 'static'
+            $t.data tooltipHoverable: null if $t.data('tooltipMouse')?
+            $t.data _.extend
+              tooltipPosition: 'top'
+              tooltipOffset: 0
+              tooltipDuration: 0
+              tooltipNoHover: null
+              tooltipNoFocus: null
+              tooltipMouse: null
+              tooltipHoverable: null
+              tooltipHoverableHover: null
+            , $t.data()
+            $div = $('<div><div/></div>')
+              .addClass("tooltip #{$t.data('tooltipPosition')}")
+              .css
+                display: 'none'
+                position: 'absolute'
+                zIndex: 999999;
+            $div
+              .find('> div')
+              .html($t.data('tooltip'))
+              .css
+                position: 'relative'
+            $t
+              .data(tooltip$Div: $div)
+              .parent()
+              .append $div
+            position = o.position($t)
+            $div
+              .css(position.home)
+              .find('> div')
+              .css _.extend {opacity: 0}, position.away
+            
+            # If the tooltip is 'hoverable' (aka it should stay while the mouse is over the tooltip itself)
+            if $t.data('tooltipHoverable')?
+              $div.hover ->
+                _.Tooltip.show $t
+                $t.data tooltipHoverableHover: true
+              , ->
+                $t.data tooltipHoverableHover: false
+                _.Tooltip.hide $t
+            else
+            
+              # Otherwise turn off interaction with the mouse
+              $div.css
+                pointerEvents: 'none'
+                '-webkit-user-select': 'none'
+                '-moz-user-select': 'none'
+                userSelect: 'none'
+          $t.data 'tooltip$Div'
+                             
         # Show the tooltip if it's not already visible
         show: ($t) ->
-          $div = $t.data 'tooltip$Div'
+          o = _.Tooltip
+          $div = o.divFor $t
           unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                   (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
                   $t.data 'tooltipHoverableHover'
-            position = _.Tooltip.position($t)
+            position = o.position($t)
             $div
               .appendTo($t.parent())
               .css(_.extend {display: 'block'}, position.home)
@@ -506,23 +498,26 @@ if not Extrascore? and jQuery? and _? and _.str?
         
         # Hide the tooltip if it's not already hidden
         hide: ($t) ->
-          $div = $t.data 'tooltip$Div'
+          o = _.Tooltip
+          $div = o.divFor $t
           unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                   (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
                   $t.data 'tooltipHoverableHover'
-            position = _.Tooltip.position($t)
+            position = o.position($t)
             $div
               .css(position.home)
               .find('> div')
               .stop()
               .animate _.extend({opacity: 0}, position.away),
                 duration: $t.data 'tooltipDuration'
-                complete: -> $(@).parent().css display: 'none'
+                complete: ->
+                  $t.data tooltip$Div: null
+                  $(@).parent().remove()
         
         # Method for getting the correct CSS position data for a tooltip
         position: ($t) ->
           o = _.Tooltip
-          $div = $t.data 'tooltip$Div'
+          $div = o.divFor $t
           offset = $t.data 'tooltipOffset'
           divWidth = $div.outerWidth()
           divHeight = $div.outerHeight()
