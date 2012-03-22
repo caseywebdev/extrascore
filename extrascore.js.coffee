@@ -180,11 +180,11 @@ if not Extrascore? and jQuery? and _? and _.str?
                   id: 'pop-up')
                 .css
                   display: 'inline-block'
-                  # IE inline-block hack...
-                  '*zoom': 1
-                  '*display': 'inline'
-                  verticalAlign: 'middle'
                   lineHeight: 'normal'
+                  verticalAlign: 'middle'
+            #o.$div.attr
+                  # IE inline-block hack...
+                  #style: o.$div.attr('style')+' *zoom: 1; *display: inline'
             $(window).on 'scroll resize orientationchange', o.correct
             o.$container.on 'click', -> o.$div.find('*[data-pop-up-outside]').click()
             o.$div
@@ -473,9 +473,9 @@ if not Extrascore? and jQuery? and _? and _.str?
               if $t.data('tooltipHoverable')?
                 $div.hover ->
                   _.Tooltip.show $t
-                  $(@).data tooltipHover: true
+                  $t.data tooltipHoverableHover: true
                 , ->
-                  $(@).data tooltipHover: false
+                  $t.data tooltipHoverableHover: false
                   _.Tooltip.hide $t
               else
               
@@ -491,7 +491,7 @@ if not Extrascore? and jQuery? and _? and _.str?
           $div = $t.data 'tooltip$Div'
           unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                   (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
-                  $div.data 'tooltipHover'
+                  $t.data 'tooltipHoverableHover'
             position = _.Tooltip.position($t)
             $div
               .appendTo($t.parent())
@@ -509,7 +509,7 @@ if not Extrascore? and jQuery? and _? and _.str?
           $div = $t.data 'tooltip$Div'
           unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                   (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
-                  $div.data 'tooltipHover'
+                  $t.data 'tooltipHoverableHover'
             position = _.Tooltip.position($t)
             $div
               .css(position.home)
