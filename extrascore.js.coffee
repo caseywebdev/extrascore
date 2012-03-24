@@ -1,10 +1,10 @@
 ###! Extrascore (requires jQuery and Underscore) by Casey Foster (caseywebdev.com) ###
 
 # Check dependencies
-if not Extrascore? and (jQuery? or Zepto?) and _?
+if not Extrascore? and jQuery? and _?
   
   # Use the jQuery shortcut
-  $ = jQuery or Zepto
+  $ = jQuery
   
   # Define the Extrascore object
   window.Extrascore =
