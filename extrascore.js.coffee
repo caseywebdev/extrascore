@@ -591,9 +591,7 @@ if not Extrascore? and jQuery? and _?
             ).removeAttr('data-tooltip')
             .data('tooltip$Div')?.destroy()
       
-      #
-      # Looking into Backbone as a replacement for my lovely State class
-      #
+      # State manager
       State:
         xhr: {}
         cache: {}
@@ -617,7 +615,7 @@ if not Extrascore? and jQuery? and _?
               history.replaceState true, null
           $("body").on 'click', '*[data-state]', ->
             $t = $ @
-            o.push (if $t.data 'stateUrl' then $t.data 'stateUrl' else $t.attr 'href'), $t.data 'stateProtocol'
+            o.push (if $t.data 'state' then $t.data 'state' else $t.attr 'href'), $t.data 'stateProtocol'
             false
         updateCache: (url, obj) ->
           o = _.State
