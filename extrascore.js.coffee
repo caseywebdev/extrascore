@@ -292,10 +292,13 @@ if not Extrascore? and jQuery? and _?
                   when 38 then o.select $search, 'prev'
                   when 40 then o.select $search, 'next'
                   when 27
-                    setTimeout ->
-                      $results.css display: 'none'
-                    , 0
-                    $q.blur()
+                    if $q.val() is ''
+                      setTimeout ->
+                        $results.css display: 'none'
+                      , 0
+                      $q.blur()
+                    else
+                      $q.val ''
                   else
                     setTimeout ->
                       o.query $search if $q.is ':focus'
