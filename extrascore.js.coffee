@@ -644,7 +644,7 @@ if not Extrascore? and jQuery? and _?
             location.assign url
         change: (url) ->
           o = _.State
-          history.pushState true, null, url if location.href isnt url
+          history[if o.cache[url].replaceState then 'replaceState' else 'pushState'] true, null, url if location.href isnt url
           o.parse o.cache[url], url
         clear: ->
         before: ->
