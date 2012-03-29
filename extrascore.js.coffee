@@ -167,9 +167,9 @@ if not Extrascore? and jQuery? and _?
           o = _.PopUp;
           unless $('#pop-up-container').length
             
-            # Until 'display: box' becomes more widely available, we're stuck with line-height and vertical-align
+            # Until 'display: box' becomes more widely available, we're stuck with table/table-cell
             $('body').append o.$container =
-              $('<div><div/></div>')
+              $('<div><div><div><div/></div></div></div>')
                 .attr(
                   id: 'pop-up-container'
                 ).css
@@ -178,19 +178,33 @@ if not Extrascore? and jQuery? and _?
                   zIndex: 999999
                   left: 0
                   top: 0
+                  width: '100%'
+                  height: '100%'
                   opacity: 0
-                  textAlign: 'center'
+                  overflow: 'auto'
             o.hide()
+            o.$container.find('> div')
+              .attr(
+                id: 'pop-up-table'
+              ).css
+                display: 'table'
+                tableLayout: 'fixed'
+                width: '100%'
+                height: '100%'
+            o.$container.find('> div > div')
+              .attr(
+                id: 'pop-up-cell'
+              ).css
+                display: 'table-cell'
+                textAlign: 'center'
+                verticalAlign: 'middle'
             o.$div =
-              o.$container.find('> div')
+              o.$container.find('> div > div > div')
                 .attr(
                   id: 'pop-up'
                 ).css
                   display: 'inline-block'
                   position: 'relative'
-                  lineHeight: 'normal'
-                  verticalAlign: 'middle'
-            $(window).on 'scroll resize orientationchange', o.correct
             o.$container.on 'click', -> o.$div.find('*[data-pop-up-outside]').click()
             o.$div
               .on('click', false)
@@ -202,16 +216,6 @@ if not Extrascore? and jQuery? and _?
                   when 27 then o.$div.find('*[data-pop-up-esc]').click()
                   else return true
                 false
-            o.correct()
-                    
-        # Match the PopUp size to the window
-        correct: ->
-          o = _.PopUp
-          if o.$container?
-            o.$container
-              .css
-                width: $(window).width()
-                lineHeight: "#{$(window).height()}px"
           
         # Fade the PopUp out
         hide: (fadeDuration) ->
@@ -222,7 +226,13 @@ if not Extrascore? and jQuery? and _?
               .animate
                 opacity: 0
               , (if isNaN(fadeDuration) then o.fadeDuration else fadeDuration)
-              , -> o.$container.css display: 'none'
+              , ->
+                o.$container.css display: 'none'
+                if o.saveBodyStyle?
+                  $('body').attr style: o.saveBodyStyle
+                else
+                  $('body').removeAttr 'style'
+                o.saveBodyStyle = null
           
         # Show the PopUp with the given `html`, optionally for a duration
         show: (html, opt = {}) ->
@@ -236,6 +246,10 @@ if not Extrascore? and jQuery? and _?
             callback: null
             fadeDuration: o.FADE_DURATION
           , opt
+          
+          o.saveBodyStyle = $('body').attr 'style' unless o.$container.css('display') is 'block'
+          $('body').css overflow: 'hidden'
+          
           $('body :focus').blur()
           o.fadeDuration = opt.fadeDuration
           o.$div.html html
