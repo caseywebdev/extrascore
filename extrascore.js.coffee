@@ -99,7 +99,37 @@ if not Extrascore? and jQuery? and _?
         
         # Swap the protocols if necessary
         path.replace location.protocol, protocol
-    
+      
+      # Sometimes it's handy to know the size of the scrollbars in a browser
+      scrollbarWidth: ->
+        $out = $('<div><div/></div>')
+          .appendTo('body')
+          .css
+            position: 'fixed'
+            overflow: 'hidden'
+            left: -100
+            width: 50
+        $in = $out.find('> div')
+          .css
+            height: 100
+        w1 = $in.width()
+        $out.css overflow: 'scroll'
+        w2 = $in.width()
+        $out.remove()
+        w1-w2
+      
+      # Does the element have a scrollbar?
+      hasScrollbar: ($obj) ->
+        style = $obj.attr 'style'
+        w1 = $obj.width()
+        $obj.css overflow: 'hidden'
+        w2 = $obj.width()
+        if style?
+          $obj.attr style: style
+        else
+          $obj.removeAttr 'style'
+        w1 isnt w2
+      
     # Extensions for Underscore (more of individual classes using Underscore for the namespace then actual extentions)
     Extensions:
       
@@ -188,7 +218,6 @@ if not Extrascore? and jQuery? and _?
                 id: 'pop-up-table'
               ).css
                 display: 'table'
-                tableLayout: 'fixed'
                 width: '100%'
                 height: '100%'
             o.$container.find('> div > div')
@@ -246,10 +275,9 @@ if not Extrascore? and jQuery? and _?
             callback: null
             fadeDuration: o.FADE_DURATION
           , opt
-          
           o.saveBodyStyle = $('body').attr 'style' unless o.$container.css('display') is 'block'
-          $('body').css overflow: 'hidden'
-          
+          $('body').css marginRight: _.scrollbarWidth() if _.hasScrollbar $ 'body'
+          $('body').css overflow: 'hidden'       
           $('body :focus').blur()
           o.fadeDuration = opt.fadeDuration
           o.$div.html html
