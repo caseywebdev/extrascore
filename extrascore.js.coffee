@@ -426,7 +426,6 @@ if not Extrascore? and jQuery? and _?
             $t.data tooltipHover: true
           ).on('mouseleave', '*[data-tooltip]:not([data-tooltip-no-hover])', ->
             $t = $ @
-            console.log "mouseleave on #{$t.text()}"
             $t.data tooltipHover: false
             o.hide $t
           ).on('focus', 'input[data-tooltip]:not([data-tooltip-no-focus]), textarea[data-tooltip]:not([data-tooltip-no-focus])', ->
@@ -507,7 +506,6 @@ if not Extrascore? and jQuery? and _?
         # Hide the tooltip if it's not already hidden
         hide: ($t) ->
           o = _.Tooltip
-          console.log "hide() on #{$t.text()}"
           if $div = $t.data 'tooltip$Div'
             unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                     (not $t.data('tooltipNoFocus')? and $t.is 'input:focus, textarea:focus') or
