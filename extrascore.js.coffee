@@ -426,11 +426,12 @@ if not Extrascore? and jQuery? and _?
             $t.data tooltipHover: true
           ).on('mouseleave', '*[data-tooltip]:not([data-tooltip-no-hover])', ->
             $t = $ @
+            console.log "mouseleave on #{$t.text()}"
             $t.data tooltipHover: false
             o.hide $t
-          ).on('focus', '*[data-tooltip]:not([data-tooltip-no-focus])', ->
+          ).on('focus', 'input[data-tooltip]:not([data-tooltip-no-focus]), textarea[data-tooltip]:not([data-tooltip-no-focus])', ->
             o.show $ @
-          ).on('blur', '*[data-tooltip]:not([data-tooltip-no-focus])', ->
+          ).on('blur', 'input[data-tooltip]:not([data-tooltip-no-focus]), textarea[data-tooltip]:not([data-tooltip-no-focus])', ->
             o.hide $ @
           )
         
@@ -444,14 +445,7 @@ if not Extrascore? and jQuery? and _?
               tooltipPosition: 'top'
               tooltipOffset: 0
               tooltipDuration: 0
-              tooltipNoHover: null
-              tooltipNoFocus: null
-              tooltipMouse: null
-              tooltipHoverable: null
             , $t.data()
-            ,
-              tooltipHover: false
-              tooltipHoverableHover: false
             $div = $('<div><div/></div>')
               .addClass("tooltip #{$t.data('tooltipPosition')}")
               .css
@@ -496,7 +490,7 @@ if not Extrascore? and jQuery? and _?
           o = _.Tooltip
           $div = o.divFor $t
           unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
-                  (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
+                  (not $t.data('tooltipNoFocus')? and $t.is 'input:focus, textarea:focus') or
                   $t.data 'tooltipHoverableHover'
             position = o.position($t)
             $div
@@ -513,9 +507,10 @@ if not Extrascore? and jQuery? and _?
         # Hide the tooltip if it's not already hidden
         hide: ($t) ->
           o = _.Tooltip
+          console.log "hide() on #{$t.text()}"
           if $div = $t.data 'tooltip$Div'
             unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
-                    (not $t.data('tooltipNoFocus')? and $t.is ':focus') or
+                    (not $t.data('tooltipNoFocus')? and $t.is 'input:focus, textarea:focus') or
                     $t.data 'tooltipHoverableHover'
               position = o.position($t)
               $div
@@ -582,14 +577,14 @@ if not Extrascore? and jQuery? and _?
               $div.find('> div').html($t.data('tooltip'))
               $div.css _.Tooltip.position($t).home
         
-        # Use this to destroy a tooltip
-        destroy: ($t) ->
+        # Use this to remove a tooltip
+        remove: ($t) ->
           $t
             .data(
               tooltipHover: false
               tooltipHoverableHover: false
             ).removeAttr('data-tooltip')
-            .data('tooltip$Div')?.destroy()
+            .data('tooltip$Div')?.remove()
       
       # State manager
       State:
