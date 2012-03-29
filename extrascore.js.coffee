@@ -59,7 +59,7 @@ if not Extrascore? and jQuery? and _?
       endsWith: (str, end) ->
         str = str+''
         end = end+''
-        return end.length <= str.length and str.substr(-end.length) is end      
+        return end.length <= str.length and str.substr(str.length-end.length) is end      
       
       # Sort an object by key for iteration
       sortByKey: (obj) ->
@@ -133,7 +133,7 @@ if not Extrascore? and jQuery? and _?
                 if not $t.val() or $t.val() is placeholder
                   $t.data PLACEHOLDER_EMPTY, true
                   $t.val placeholder
-                  $t[0].type = '' if password
+                  $t[0].type = 'text' if password
                 else
                   $t.data PLACEHOLDER_EMPTY, false
                 $t.attr
@@ -151,7 +151,7 @@ if not Extrascore? and jQuery? and _?
                   else
                     $t.val placeholder
                     $t.data PLACEHOLDER_EMPTY, true
-                    $t[0].type = '' if password
+                    $t[0].type = 'text' if password
       
       # Multipurpose PopUp
       PopUp:
