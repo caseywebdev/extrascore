@@ -221,7 +221,7 @@ if not Extrascore? and jQuery? and _?
                 height: '100%'
             o.$container.find('> div > div')
               .attr(
-                id: 'pop-up-cell'
+                id: 'pop-up-table-cell'
               ).css
                 display: 'table-cell'
                 textAlign: 'center'
@@ -262,13 +262,12 @@ if not Extrascore? and jQuery? and _?
                   $('body').removeAttr 'style'
                 o.saveBodyStyle = null
           
-        # Show the PopUp with the given `html`, optionally for a duration
+        # Show the PopUp with the given `html`, optionally for a 'duration', with a 'callback', and/or with a 'fadeDuration'
         show: (html, opt = {}) ->
           o = _.PopUp
           
           # Build the PopUp element
           o.build()
-          
           opt = _.extend
             duration: o.DURATION
             callback: null
