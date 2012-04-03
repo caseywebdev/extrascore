@@ -148,6 +148,9 @@ if not Extrascore? and jQuery? and _?
                   
         # Check for new inputs or textareas than need to be initialized with Placeholder
         dom: ->
+          
+          # Dirty fix to a WebKit bug that's existed for a couple years now (annoying)
+          $('input[autocomplete!=off], textarea[autocomplete!=off]').attr autocomplete: 'off'
           $('input[data-placeholder], textarea[data-placeholder]').each ->
             $t = $ @
             # Strings to CONSTANTS for minification
@@ -309,7 +312,7 @@ if not Extrascore? and jQuery? and _?
                 searchLastQ: null
                 searchPage: 0
                 searchHoldHover: false
-                search$Q: $search.find('.q').attr(autocomplete: 'off')
+                search$Q: $search.find('.q')
                 search$Results: $search.find '.results'
               $q = $search.data('search$Q')
               $results = $search.data 'search$Results'
