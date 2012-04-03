@@ -150,7 +150,7 @@ if not Extrascore? and jQuery? and _?
         dom: ->
           
           # Dirty fix to a WebKit bug that's existed for a couple years now (annoying)
-          $('input[autocomplete!=off], textarea[autocomplete!=off]').attr autocomplete: 'off'
+          $('input[autocomplete!=off], textarea[autocomplete!=off]').attr autocomplete: 'off' if $.browser.webkit
           $('input[data-placeholder], textarea[data-placeholder]').each ->
             $t = $ @
             # Strings to CONSTANTS for minification
