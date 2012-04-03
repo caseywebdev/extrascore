@@ -55,7 +55,7 @@ if not Extrascore? and jQuery? and _?
         start = start+''
         return start.length <= str.length and str.substr(0, start.length) is start
       
-      # This guys too
+      # This guy too
       endsWith: (str, end) ->
         str = str+''
         end = end+''
@@ -667,10 +667,23 @@ if not Extrascore? and jQuery? and _?
               o.change url
             else
               o.before o.cache[url], url
-              o.xhr = $.getJSON(url+(if o.query then (if '?' in url then '&' else '?')+o.query else ''), null, (data) ->
-                o.updateCache url, data
-                o.after o.cache[url], url
-                o.change url
+              o.xhr = $.get(url+(if o.query then (if '?' in url then '&' else '?')+o.query else ''), null, (data) ->
+                valid = null
+                selectors = {}
+                $(data.replace /<(\/)?script>/gi, '<!--$1state-script-->').each ->
+                  $t = $ @
+                  unless $t[0] instanceof Text
+                    if (s = $t.data 'stateSelector') or $t.is 'title'
+                      selectors[s or 'title'] = $t.html().replace /<!--(\/)?state-script-->/g, '<$1script>'
+                      valid = true if s
+                    else unless valid?
+                      valid = false
+                if valid
+                  o.updateCache url, selectors
+                  o.after o.cache[url], url
+                  o.change url
+                else
+                  location.assign url
               ).error -> location.assign url
           else
             location.assign url
