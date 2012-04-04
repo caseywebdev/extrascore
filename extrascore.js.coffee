@@ -49,6 +49,10 @@ if not Extrascore? and jQuery? and _?
         str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
         $.trim(str.replace /\s+/g, ' ').replace /\ /g, opt.delimiter
       
+      # Shortcut for _.clean str, delimiter: '-', alphanumeric: true, downcase: true
+      urlize: (str, delimiter = '-') ->
+        _.clean str, delimiter: delimiter, alphanumeric: true, downcase: true
+      
       # This sucker comes in handy
       startsWith: (str, start) ->
         str = str+''
@@ -432,19 +436,19 @@ if not Extrascore? and jQuery? and _?
         # Break a query up into components if colons are used
         parseQuery: (str, colonSplit = false) ->
           str = _.clean str, downcase: true
-          colon = _.compact str.split ':'
-          if colonSplit and colon.length > 1
-            colon = _.map colon, (str) -> _.strip(str).match /(?:^|^(.*) )(\w+)$/
-            terms = {}
-            _.each colon, (match, i) ->
-              if i < colon.length-1
-                terms[match[2]] = colon[i+1][1]
-              else
-                prev = colon[i-1][2]
-                terms[prev] = (terms[prev] ? terms[prev]+' ' : '')+match[2]
-            terms
-          else
-            str
+          if colonSplit
+            colon = _.compact str.split ':'
+            if colon.length > 1
+              colon = _.map colon, (str) -> _.strip(str).match /(?:^|^(.*) )(\w+)$/
+              terms = {}
+              _.each colon, (match, i) ->
+                if i < colon.length-1
+                  terms[match[2]] = colon[i+1][1]
+                else
+                  prev = colon[i-1][2]
+                  terms[prev] = (terms[prev] ? terms[prev]+' ' : '')+match[2]
+              return terms
+          str
            
       # Yay tooltips!
       Tooltip:
@@ -630,6 +634,10 @@ if not Extrascore? and jQuery? and _?
       
       # State manager
       State:
+      
+        # Header to send with the XHR
+        HEADER: 'X-Chromeless'
+        
         xhr: {}
         cache: {}
         
@@ -638,8 +646,8 @@ if not Extrascore? and jQuery? and _?
         # When true, forces State to reload the page on the next request.
         # refresh: false
         
-        # Specify a query parameter to send with the XHR request
-        # query: 'pushState'
+        # Specify data to send with the XHR request
+        data : {}
         
         load: ->
           o = _.State
@@ -670,24 +678,27 @@ if not Extrascore? and jQuery? and _?
               o.change url
             else
               o.before o.cache[url], url
-              o.xhr = $.get(url+(if o.query then (if '?' in url then '&' else '?')+o.query else ''), null, (data) ->
-                valid = null
-                selectors = {}
-                $(data.replace /<(\/)?script>/gi, '<!--$1state-script-->').each ->
-                  $t = $ @
-                  unless $t[0] instanceof Text
-                    if (s = $t.data 'stateSelector') or $t.is 'title'
-                      selectors[s or 'title'] = $t.html().replace /<!--(\/)?state-script-->/g, '<$1script>'
-                      valid = true if s
-                    else unless valid?
-                      valid = false
-                if valid
-                  o.updateCache url, selectors
-                  o.after o.cache[url], url
-                  o.change url
-                else
-                  location.assign url
-              ).error -> location.assign url
+              o.xhr = $.ajax url,
+                data: o.data
+                success: (data) ->
+                  valid = null
+                  selectors = {}
+                  $(data.replace /<(\/)?script>/gi, '<!--$1state-script-->').each ->
+                    $t = $ @
+                    unless $t[0] instanceof Text
+                      if (s = $t.data 'stateSelector') or $t.is 'title'
+                        selectors[s or 'title'] = $t.html().replace /<!--(\/)?state-script-->/g, '<$1script>'
+                        valid = true if s
+                      else unless valid?
+                        valid = false
+                  if valid
+                    o.updateCache url, selectors
+                    o.after o.cache[url], url
+                    o.change url
+                  else
+                    location.assign url
+                beforeSend: (xhr) -> xhr.setRequestHeader o.HEADER, 1
+                error: -> location.assign url
           else
             location.assign url
         change: (url) ->
