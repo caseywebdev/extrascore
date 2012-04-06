@@ -104,6 +104,9 @@ if not Extrascore? and jQuery? and _?
         # Swap the protocols if necessary
         path.replace location.protocol, protocol
       
+      # The reverse of _.url()
+      relativeUrl: (path = '') -> _.url(path).replace /^\w+:\/\/[^/]+/, ''
+        
       # Sometimes it's handy to know the size of the scrollbars in a browser
       scrollbarSize: (dimension = 'width') ->
         $out = $('<div><div/></div>')
@@ -132,6 +135,26 @@ if not Extrascore? and jQuery? and _?
         else
           $obj.removeAttr 'style'
         d1 isnt d2
+      
+      # Break a query up into components if colons are used
+      parseQuery: (str, colonSplit = false) ->
+        str = _.clean str, downcase: true
+        if colonSplit
+          colon = _.compact str.split ':'
+          if colon.length > 1
+            colon = _.map colon, (str) -> _.strip(str).match /(?:^|^(.*) )(\w+)$/
+            terms = {}
+            _.each colon, (match, i) ->
+              if i < colon.length-1
+                terms[match[2]] = colon[i+1][1]
+              else
+                prev = colon[i-1][2]
+                terms[prev] = (terms[prev] ? terms[prev]+' ' : '')+match[2]
+            return terms
+        str
+      
+      # Ghetto nextTick
+      nextTick: (fn) -> setTimeout fn, 0
       
     # Extensions for Underscore (more of individual classes using Underscore for the namespace then actual extentions)
     Extensions:
@@ -318,7 +341,7 @@ if not Extrascore? and jQuery? and _?
                 searchHoldHover: false
                 search$Q: $search.find('.q')
                 search$Results: $search.find '.results'
-              $q = $search.data('search$Q')
+              $q = $search.data 'search$Q'
               $results = $search.data 'search$Results'
               o.query $search if $q.is ':focus'
               $search.hover(->
@@ -328,29 +351,21 @@ if not Extrascore? and jQuery? and _?
                 $results.css display: 'none' unless $q.is(':focus') or $search.data 'searchHoldHover'
               ).mouseover ->
                 $search.data searchHoldHover: false
-              $q.blur(->
-                setTimeout ->
-                  $results.css display: 'none' unless $search.data 'searchHover'
-                , 0
-              ).focus(->
-                $search.data searchHoldHover: false
-              ).keydown((e) ->
+              $q.blur(-> _.nextTick -> $results.css display: 'none' unless $search.data 'searchHover')
+              .focus(-> $search.data searchHoldHover: false)
+              .keydown((e) ->
                 switch e.keyCode
                   when 13 then $search.find('.selected').click()
                   when 38 then o.select $search, 'prev'
                   when 40 then o.select $search, 'next'
                   when 27
                     if $q.val() is ''
-                      setTimeout ->
-                        $results.css display: 'none'
-                      , 0
+                      _.nextTick -> $results.css display: 'none'
                       $q.blur()
                     else
-                      $q.val ''
+                      _.nextTick -> $q.val ''
                   else
-                    setTimeout ->
-                      o.query $search if $q.is ':focus'
-                    , 0
+                    _.nextTick -> o.query $search if $q.is ':focus'
                     return true
                 false
               ).on 'focus keyup change', ->
@@ -390,7 +405,7 @@ if not Extrascore? and jQuery? and _?
             $results = $search.data 'search$Results'
             $q = $search.data 'search$Q'
             callback = eval $search.data('search')
-            q = o.parseQuery $q.val(), $search.data('searchColonSplitQuery')?
+            q = _.parseQuery $q.val()
             t = new Date().getTime()
             $results.css display: 'block'
             unless q or $search.data('searchEmpty')?
@@ -409,7 +424,7 @@ if not Extrascore? and jQuery? and _?
                   setTimeout ->
                     handleData = (data) ->
                       $search.data('searchCache')["#{urlN}_"+q] = data
-                      if check is $search.data('searchId') and o.parseQuery($q.val()) or $search.data('searchEmpty')?
+                      if check is $search.data('searchId') and _.parseQuery($q.val()) or $search.data('searchEmpty')?
                         $search.removeClass 'loading'
                         callback $search, data, urlN
                       o.query $search, urlN+1 if $search.data 'searchUrl'+(urlN+1)
@@ -432,23 +447,6 @@ if not Extrascore? and jQuery? and _?
               o.page $search, $search.data('searchPage')-1, true
             else if $page.find('.result.selected.next').length
               o.page $search, $search.data('searchPage')+1
-      
-        # Break a query up into components if colons are used
-        parseQuery: (str, colonSplit = false) ->
-          str = _.clean str, downcase: true
-          if colonSplit
-            colon = _.compact str.split ':'
-            if colon.length > 1
-              colon = _.map colon, (str) -> _.strip(str).match /(?:^|^(.*) )(\w+)$/
-              terms = {}
-              _.each colon, (match, i) ->
-                if i < colon.length-1
-                  terms[match[2]] = colon[i+1][1]
-                else
-                  prev = colon[i-1][2]
-                  terms[prev] = (terms[prev] ? terms[prev]+' ' : '')+match[2]
-              return terms
-          str
            
       # Yay tooltips!
       Tooltip:
@@ -686,8 +684,8 @@ if not Extrascore? and jQuery? and _?
                   $(data.replace /<(\/)?script>/gi, '<!--$1state-script-->').each ->
                     $t = $ @
                     unless $t[0] instanceof Text
-                      if (s = $t.data 'stateSelector') or $t.is 'title'
-                        selectors[s or 'title'] = $t.html().replace /<!--(\/)?state-script-->/g, '<$1script>'
+                      if (s = $t.attr 'id') or $t.is 'title'
+                        selectors[s and "##{s}" or 'title'] = $t.html().replace /<!--(\/)?state-script-->/g, '<$1script>'
                         valid = true if s
                       else unless valid?
                         valid = false
@@ -724,8 +722,8 @@ if not Extrascore? and jQuery? and _?
         # Check for new lazy images
         dom: ->
         
-          # Wait for the browser to position the element on the page before checking its coordinates via setTimeout fn, 0
-          setTimeout ->
+          # Wait for the browser to position the element on the page before checking its coordinates
+          _.nextTick ->
             $('img[data-lazy]').each ->
               $t = $ @
               visible = _.reduce $t.parents(), (memo, parent) ->
@@ -734,7 +732,6 @@ if not Extrascore? and jQuery? and _?
               if visible && $(window).scrollTop()+$(window).outerHeight() >= $t.offset().top-($t.data('lazyTolerance') ? _.Lazy.TOLERANCE)
                 url = $t.data 'lazy'
                 $t.removeAttr('data-lazy').attr 'src', url
-          , 0
       
       # Everyone's favorite cheat code        
       Konami: (callback, onlyOnce = false, code = '38,38,40,40,37,39,37,39,66,65,13', touchCode = 'up,up,down,down,left,right,left,right,tap,tap,tap') ->
