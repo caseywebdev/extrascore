@@ -476,9 +476,9 @@ if not Extrascore? and jQuery? and _?
             $t = $ @
             $t.data tooltipHover: false
             o.hide $t
-          ).on('focus', 'input.js-tooltip:not([data-tooltip-no-focus]), textarea.js-tooltip:not([data-tooltip-no-focus])', ->
+          ).on('focus', 'js-tooltip:input:not([data-tooltip-no-focus])', ->
             o.show $ @
-          ).on('blur', 'input.js-tooltip:not([data-tooltip-no-focus]), textarea.js-tooltip:not([data-tooltip-no-focus])', ->
+          ).on('blur', 'js-tooltip:input:not([data-tooltip-no-focus])', ->
             o.hide $ @
           )
         
@@ -537,7 +537,7 @@ if not Extrascore? and jQuery? and _?
           o = _.Tooltip
           $div = o.divFor $t
           unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
-                  (not $t.data('tooltipNoFocus')? and $t.is 'input:focus, textarea:focus') or
+                  (not $t.data('tooltipNoFocus')? and $t.is ':input:focus') or
                   $t.data 'tooltipHoverableHover'
             position = o.position $t
             $div
@@ -556,7 +556,7 @@ if not Extrascore? and jQuery? and _?
           o = _.Tooltip
           if $div = $t.data 'tooltip$Div'
             unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
-                    (not $t.data('tooltipNoFocus')? and $t.is 'input:focus, textarea:focus') or
+                    (not $t.data('tooltipNoFocus')? and $t.is ':input:focus') or
                     $t.data 'tooltipHoverableHover'
               position = o.position $t
               $div
