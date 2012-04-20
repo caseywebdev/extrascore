@@ -10,7 +10,7 @@ if not Extrascore? and jQuery? and _?
   window.Extrascore =
     
     # Mixins for Underscore
-    Mixins:
+    mixins:
     
       # Mass method call for every child of obj
       mass: (obj, key, args...) ->
@@ -157,7 +157,7 @@ if not Extrascore? and jQuery? and _?
       nextTick: (fn) -> setTimeout fn, 0
       
     # Extensions for Underscore (more of individual classes using Underscore for the namespace then actual extentions)
-    Extensions:
+    extensions:
       
       # Placeholder for lame browsers
       Placeholder:
@@ -476,9 +476,9 @@ if not Extrascore? and jQuery? and _?
             $t = $ @
             $t.data tooltipHover: false
             o.hide $t
-          ).on('focus', 'js-tooltip:input:not([data-tooltip-no-focus])', ->
+          ).on('focus', '.js-tooltip:input:not([data-tooltip-no-focus])', ->
             o.show $ @
-          ).on('blur', 'js-tooltip:input:not([data-tooltip-no-focus])', ->
+          ).on('blur', '.js-tooltip:input:not([data-tooltip-no-focus])', ->
             o.hide $ @
           )
         
@@ -809,12 +809,32 @@ if not Extrascore? and jQuery? and _?
               else if not name?
                 cookies[n] = v
           if not name then cookies else null
-  
+    
+    # jQuery plugins
+    plugins:
+    
+      # Modified from https://github.com/codebrew/backbone-rails
+      # Links a form (or single input) to a backbone model
+      backboneLink: (model) ->
+        $t = $ @
+        (if $t.is ':input' then $t else $t.find ':input').each ->
+          $t = $ @
+          name = $t.attr 'name'
+          $t.on 'keydown change', ->
+            _.nextTick ->
+              model.set name, (if $t.is ':checkbox' then $t.is ':checked' else $t.val()), silent: true
+          model.on 'change:' + name, ->
+            $t.val model.get name
+
   # Mixin the Extrascore Mixins
-  _.mixin Extrascore.Mixins
+  _.mixin Extrascore.mixins
   
   # Extend the Extrascore Extensions
-  _.extend _, Extrascore.Extensions
+  _.extend _, Extrascore.extensions
   
+  # Plugin the jQuery Plugins
+  _.extend $.fn, Extrascore.plugins
+
   # Initialize the Extrascore Extensions
-  _.init Extrascore.Extensions
+  _.init Extrascore.extensions
+  
