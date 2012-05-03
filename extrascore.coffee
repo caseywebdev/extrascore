@@ -13,7 +13,7 @@ if not Extrascore? and jQuery? and _?
     mixins:
     
       # Mass method call for every child of obj
-      mass: (obj, key, args...) ->
+      mass: (key, obj, args...) ->
         for __, val of obj
           val?[key]? args...
           
@@ -23,21 +23,18 @@ if not Extrascore? and jQuery? and _?
         
         # Call on jQuery's DOM ready call
         load = (obj) ->
-          _.mass obj, 'load'
-          dom obj
-          $('body').on 'DOMSubtreeModified', (e) -> dom obj, e unless obj._extrascoreDomLocked
-          
-        # Call on every DOMSubtreeModified event (use carefully, doesn't work in Opera *shocking*)
-        dom = (obj, e) ->
-          obj._extrascoreDomLocked = true
-          _.mass obj, 'dom', e
-          delete obj._extrascoreDomLocked
+          _.mass 'load', obj
+          _.update obj
         
         # Call `init()` on all children of obj if the method exists
-        _.mass obj, 'init'
+        _.mass 'init', obj
         
         $ -> load obj
       
+      # This should be called after DOM changes that use a specific extension
+      update: (obj) ->
+        _.mass 'update', if obj? then obj else Extrascore.extensions
+        
       # Clean a string for use in a URL or query
       clean: (str, opt = {}) ->
         opt = _.extend
@@ -168,43 +165,46 @@ if not Extrascore? and jQuery? and _?
           # Hijack jQuery's .val() so it will return an empty string if Placeholder says it should
           $.fn._val = $.fn.val
           $.fn.val = (str) ->
+            $t = $ @
             if str?
-              $(@).each -> $(@)._val str
+              str = '' + str
+              if $t.is('.js-placeholder, .js-placeholder-password') and not $t.is ':focus'
+                if str
+                  $t._val str
+                  $t[0].type = 'password' if $t.hasClass 'js-placeholder-password'
+                  $t.data placeholderEmpty: false
+                else
+                  $t.data placeholderEmpty: true
+                  $t._val $t.data 'placeholderText'
+                  $t[0].type = 'text' if $t.hasClass 'js-placeholder-password'
+              else
+                $t._val str
+              $t
             else
-              if $(@).data 'placeholderEmpty' then '' else $(@)._val()
+              if $t.data 'placeholderEmpty' then '' else $t._val()
                   
         # Check for new inputs or textareas than need to be initialized with Placeholder
-        dom: ->
+        update: ->
           
           $('.js-placeholder, .js-placeholder-password').each ->
             $t = $ @
-            if $t.data('placeholderHtml')? and not $t.data('placeholderEmpty')?
+            if $t.data('placeholderText')? and not $t.data('placeholderEmpty')?
               password = $t.hasClass 'js-placeholder-password'
-              placeholder = $t.data 'placeholderHtml'
+              placeholderText = $t.data 'placeholderText'
               $t[0].type = 'password' if password
               unless password and $.browser.msie and $.browser.version.split('.') < 9
-                if not $t.val() or $t.val() is placeholder
-                  $t.data placeholderEmpty: true
-                  $t.val placeholder
-                  $t[0].type = 'text' if password
-                else
-                  $t.data placeholderEmpty: false
+                $t.data placeholderEmpty: false
+                $t.val '' if not $t.val() or $t.val() is placeholderText
                 $t.attr
-                  placeholder: placeholder
-                  title: placeholder
+                  placeholder: placeholderText
+                  title: placeholderText
                 $t.focus(->
-                  $t.val '' if $t.data 'placeholderEmpty'
-                  if password
-                    $t[0].type = 'password'
-                    $t.attr placeholder: placeholder
-                  $t.data placeholderEmpty: false
-                ).blur ->
-                  if $t.val()
+                  _.nextTick ->
+                    $t.val '' if $t.data 'placeholderEmpty'
                     $t.data placeholderEmpty: false
-                  else
-                    $t.val placeholder
-                    $t.data placeholderEmpty: true
-                    $t[0].type = 'text' if password
+                ).blur ->
+                  _.nextTick ->
+                    $t.val '' unless $t.val()
       
       # Multipurpose PopUp
       PopUp:
@@ -287,7 +287,7 @@ if not Extrascore? and jQuery? and _?
                 o.saveBodyStyle = null
           
         # Show the PopUp with the given `html`, optionally for a 'duration', with a 'callback', and/or with a 'fadeDuration'
-        show: (html, opt = {}) ->
+        show: (htmlOrEl, opt = {}) ->
           o = _.PopUp
           
           # Build the PopUp element
@@ -303,7 +303,12 @@ if not Extrascore? and jQuery? and _?
       
           $('body :focus').blur()
           o.fadeDuration = opt.fadeDuration
-          o.$div.html html
+          o.$div.empty()
+          if htmlOrEl instanceof jQuery
+            o.$div.append htmlOrEl
+          else
+            o.$div.html htmlOrEl
+          _.update()
           o.$container
             .stop()
             .css(
@@ -321,7 +326,7 @@ if not Extrascore? and jQuery? and _?
       Search:
         
         # Check for Search objects to be initialized
-        dom: ->
+        update: ->
           $('.js-search').each ->
             $search = $ @
             unless $search.data('searchCache')?
@@ -410,26 +415,28 @@ if not Extrascore? and jQuery? and _?
             q = _.clean $q.val(), downcase: true
             t = new Date().getTime()
             $results.css display: 'block'
+            anotherSearch = $search.data("searchUrl#{urlN + 1}")?
             unless q or $search.data('js-search-empty')?
               $results.css(display: 'none').empty()
               $search.removeClass 'js-search-loading'
             else if q isnt $search.data('searchLastQ') or urlN > 1
-              callback $search
+              $search.addClass 'js-search-loading'
+              callback $search, null, urlN
               clearTimeout $search.data 'searchTimeout'
               $search.data('searchAjax').abort?()
               if $search.data('searchCache')["#{urlN}_" + q]?
+                $search.removeClass 'js-search-loading' unless anotherSearch
                 callback $search, $search.data('searchCache')["#{urlN}_" + q], urlN
-                $search.removeClass 'js-search-loading'
-                o.query $search, urlN + 1 if $search.data("searchUrl#{urlN+1}")?
+                o.query $search, urlN + 1 if anotherSearch
               else
-                $search.addClass('js-search-loading').data 'searchTimeout',
+                $search.data 'searchTimeout',
                   setTimeout ->
                     handleData = (data) ->
                       $search.data('searchCache')["#{urlN}_" + q] = data
                       if check is $search.data('searchId') and (_.clean($q.val()) or $search.data('js-search-empty')?)
-                        $search.removeClass 'js-search-loading'
+                        $search.removeClass 'js-search-loading' unless anotherSearch
                         callback $search, data, urlN
-                      o.query $search, urlN + 1 if $search.data "searchUrl#{urlN+1}"
+                      o.query $search, urlN + 1 if anotherSearch
                     check = $search.data(searchId: $search.data('searchId') + 1).data 'searchId'
                     if $search.data('searchJs')?
                       handleData eval($search.data 'searchJs')(q)
@@ -536,7 +543,7 @@ if not Extrascore? and jQuery? and _?
         show: ($t) ->
           o = _.Tooltip
           $div = o.divFor $t
-          unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
+          unless (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                   (not $t.data('tooltipNoFocus')? and $t.is ':input:focus') or
                   $t.data 'tooltipHoverableHover'
             position = o.position $t
@@ -555,7 +562,7 @@ if not Extrascore? and jQuery? and _?
         hide: ($t) ->
           o = _.Tooltip
           if $div = $t.data 'tooltip$Div'
-            unless  (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
+            unless (not $t.data('tooltipNoHover')? and $t.data 'tooltipHover') or
                     (not $t.data('tooltipNoFocus')? and $t.is ':input:focus') or
                     $t.data 'tooltipHoverableHover'
               position = o.position $t
@@ -662,12 +669,18 @@ if not Extrascore? and jQuery? and _?
             $t = $ @
             o.push (if $t.data 'stateUrl' then $t.data 'stateUrl' else $t.attr 'href'), $t.data 'stateProtocol'
             false
-        updateCache: (url, obj) ->
+        
+        set: (obj, url = location.href) ->
           o = _.State
           if o.cache[url]?
             _.extend o.cache[url], obj
           else
             o.cache[url] = obj
+        
+        # Get a copy of the current url's cache
+        get: (key, url = location.href) ->
+          _.State.cache[url][key]
+        
         push: (url, protocol = location.protocol) ->
           o = _.State
           url = _.url url, protocol
@@ -693,7 +706,7 @@ if not Extrascore? and jQuery? and _?
                         valid = false
                   url = selectors['#chromeless-request-url'] if selectors['#chromeless-request-url']? and selectors['#chromeless-request-url'] isnt url
                   if valid
-                    o.updateCache url, selectors
+                    o.set selectors, url
                     o.after o.cache[url], url
                     o.change url
                   else
@@ -706,6 +719,7 @@ if not Extrascore? and jQuery? and _?
           o = _.State
           history[if o.cache[url].replace then 'replaceState' else 'pushState'] true, null, url if location.href isnt url
           o.parse o.cache[url], url
+          _.update()
         clear: ->
         before: ->
         after: ->
@@ -720,11 +734,11 @@ if not Extrascore? and jQuery? and _?
         # After the DOM is ready
         load: ->
           o = _.Lazy
-          $(window).on 'scroll resize', o.dom
+          $(window).on 'scroll resize', o.update
                     
         # Check for new lazy images
-        dom: ->
-        
+        update: ->
+                    
           # Wait for the browser to position the element on the page before checking its coordinates
           _.nextTick ->
             $('img.js-lazy').each ->
@@ -809,22 +823,49 @@ if not Extrascore? and jQuery? and _?
               else if not name?
                 cookies[n] = v
           if not name then cookies else null
-    
+      
+      # A backbone UI/model sync'r
+      Linker:
+        
+        # How many ms after finishing typing should the save occur?
+        SYNC_DELAY: 1000
+        
+        update: ->
+          $('.js-linker').each ->
+            $t = $ @
+            unless $t.data 'linkerLinked'
+              model = $t.data 'linkerModel'
+              model = eval model if typeof model is 'string'
+              attr = $t.data 'linkerAttr'
+              if model instanceof Backbone.Model and attr
+                if $t.is ':input'
+                  $t.on 'keydown change', ->
+                    _.nextTick ->
+                      oldVal = model.get attr
+                      newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
+                      collection = $t.data 'linkerCollection'
+                      collection = eval collection if typeof collection is 'string'
+                      newVal = collection.get newVal if collection
+                      model.set attr, newVal
+                      if $t.data('linkerSave')? and oldVal isnt newVal 
+                        clearTimeout model.syncTimeout
+                        model.syncTimeout = setTimeout ->
+                          model.save()
+                        , _.Linker.SYNC_DELAY
+                model.on('change:' + attr, ->
+                  oldVal = if $t.is ':checkbox' then $t.is ':checked' else $t[if $t.is ':input' then 'val' else 'text']()
+                  newVal = model.get attr
+                  newVal = newVal.id if newVal instanceof Backbone.Model
+                  if oldVal isnt newVal
+                    if $t.is ':checkbox'
+                      $t.prop checked: newVal
+                    else
+                      $t[if $t.is ':input' then 'val' else 'text'] newVal
+                ).trigger 'change:' + attr
+                $t.data linkerLinked: true
+      
     # jQuery plugins
-    plugins:
-    
-      # Modified from https://github.com/codebrew/backbone-rails
-      # Links a form (or single input) to a backbone model
-      backboneLink: (model) ->
-        $t = $ @
-        (if $t.is ':input' then $t else $t.find ':input').each ->
-          $t = $ @
-          name = $t.attr 'name'
-          $t.on 'keydown change', ->
-            _.nextTick ->
-              model.set name, (if $t.is ':checkbox' then $t.is ':checked' else $t.val()), silent: true
-          model.on 'change:' + name, ->
-            $t.val model.get name
+    plugins: {}
 
   # Mixin the Extrascore Mixins
   _.mixin Extrascore.mixins
