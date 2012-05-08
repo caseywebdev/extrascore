@@ -213,6 +213,8 @@ if not Extrascore? and jQuery? and _?
         DURATION: 0
         FADE_DURATION: 250
         
+        outside: true
+        
         # Build the PopUp element
         build: ->
         
@@ -257,9 +259,12 @@ if not Extrascore? and jQuery? and _?
                 ).css
                   display: 'inline-block'
                   position: 'relative'
-            o.$container.on 'click', -> o.$div.find('.js-pop-up-outside').click()
+            o.$container.on 'click', ->
+              if o.outside
+                o.$div.find('.js-pop-up-outside').click()
+              o.outside = true
             o.$div
-              .on('click', false)
+              .on('click', -> o.outside = false; true)
               .on 'click', '.js-pop-up-hide', o.hide
             $(document).keydown (e) ->
               if o.$container.css('display') is 'block' and not $('body :focus').length
@@ -681,6 +686,12 @@ if not Extrascore? and jQuery? and _?
         get: (key, url = location.href) ->
           _.State.cache[url][key]
         
+        reset: (url = location.href) ->
+          _.State.cache[url] = null
+        
+        resetAll: ->
+          _.State.cache = {}
+        
         push: (url, protocol = location.protocol) ->
           o = _.State
           url = _.url url, protocol
@@ -878,4 +889,3 @@ if not Extrascore? and jQuery? and _?
 
   # Initialize the Extrascore Extensions
   _.init Extrascore.extensions
-  
