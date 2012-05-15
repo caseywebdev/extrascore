@@ -839,9 +839,6 @@ if not Extrascore? and jQuery? and _?
       # A backbone UI/model sync'r
       Linker:
         
-        # How many ms after finishing typing should the save occur?
-        SYNC_DELAY: 1000
-        
         update: ->
           $('.js-linker').each ->
             $t = $ @
@@ -851,18 +848,13 @@ if not Extrascore? and jQuery? and _?
               attr = $t.data 'linkerAttr'
               if model instanceof Backbone.Model and attr
                 if $t.is ':input'
-                  $t.on 'keydown change', ->
-                    _.nextTick ->
-                      oldVal = model.get attr
-                      newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
-                      if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
-                        newVal = if !newVal then null else parseInt newVal
-                      model.set attr, newVal
-                      if $t.data('linkerSave')? and oldVal isnt newVal 
-                        clearTimeout model.syncTimeout
-                        model.syncTimeout = setTimeout ->
-                          model.save()
-                        , _.Linker.SYNC_DELAY
+                  $t.on 'change', ->
+                    oldVal = model.get attr
+                    newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
+                    if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
+                      newVal = if !newVal then null else parseInt newVal
+                    model.set attr, newVal
+                    model.save() if $t.data('linkerSave')? and oldVal isnt newVal
                 model.on('change:' + attr, ->
                   oldVal = if $t.is ':checkbox' then $t.is ':checked' else $t[if $t.is ':input' then 'val' else 'text']()
                   newVal = model.get attr
