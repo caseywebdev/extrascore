@@ -677,6 +677,7 @@ if not Extrascore? and jQuery? and _?
         
         set: (obj, url = location.href) ->
           o = _.State
+          url = _.url url
           if o.cache[url]?
             _.extend o.cache[url], obj
           else
@@ -684,10 +685,10 @@ if not Extrascore? and jQuery? and _?
         
         # Get a copy of the current url's cache
         get: (key, url = location.href) ->
-          _.State.cache[url][key]
+          _.State.cache[_.url url][key]
         
         reset: (url = location.href) ->
-          _.State.cache[url] = null
+          delete _.State.cache[_.url url]
         
         resetAll: ->
           _.State.cache = {}
@@ -724,7 +725,7 @@ if not Extrascore? and jQuery? and _?
                     location.assign url
                 beforeSend: (xhr) -> xhr.setRequestHeader o.HEADER, 1
                 error: -> location.assign url
-          else
+          else unless o.cache[url]?.soft
             location.assign url
         change: (url) ->
           o = _.State
@@ -854,9 +855,8 @@ if not Extrascore? and jQuery? and _?
                     _.nextTick ->
                       oldVal = model.get attr
                       newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
-                      collection = $t.data 'linkerCollection'
-                      collection = eval collection if typeof collection is 'string'
-                      newVal = collection.get newVal if collection
+                      if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
+                        newVal = if !newVal then null else parseInt newVal
                       model.set attr, newVal
                       if $t.data('linkerSave')? and oldVal isnt newVal 
                         clearTimeout model.syncTimeout
@@ -866,7 +866,6 @@ if not Extrascore? and jQuery? and _?
                 model.on('change:' + attr, ->
                   oldVal = if $t.is ':checkbox' then $t.is ':checked' else $t[if $t.is ':input' then 'val' else 'text']()
                   newVal = model.get attr
-                  newVal = newVal.id if newVal instanceof Backbone.Model
                   if oldVal isnt newVal
                     if $t.is ':checkbox'
                       $t.prop checked: newVal
