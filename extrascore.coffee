@@ -195,16 +195,19 @@ if not Extrascore? and jQuery? and _?
               unless password and $.browser.msie and $.browser.version.split('.') < 9
                 $t.data placeholderEmpty: false
                 $t.val '' if not $t.val() or $t.val() is placeholderText
-                $t.attr
-                  placeholder: placeholderText
-                  title: placeholderText
-                $t.focus(->
-                  _.nextTick ->
-                    $t.val '' if $t.data 'placeholderEmpty'
-                    $t.data placeholderEmpty: false
-                ).blur ->
-                  _.nextTick ->
-                    $t.val '' unless $t.val()
+                $t
+                  .attr(
+                    placeholder: placeholderText
+                    title: placeholderText
+                  )
+                  .focus(->
+                    _.nextTick ->
+                      $t.val '' if $t.data 'placeholderEmpty'
+                      $t.data placeholderEmpty: false
+                  )
+                  .blur ->
+                    _.nextTick ->
+                      $t.val '' unless $t.val()
       
       # Multipurpose PopUp
       PopUp:
@@ -225,9 +228,8 @@ if not Extrascore? and jQuery? and _?
             # Until 'display: box' becomes more widely available, we're stuck with table/table-cell
             $('body').append o.$container =
               $('<div><div><div><div/></div></div></div>')
-                .attr(
-                  id: 'js-pop-up-container'
-                ).css
+                .attr(id: 'js-pop-up-container')
+                .css
                   display: 'none'
                   position: 'fixed'
                   zIndex: 999999
@@ -239,24 +241,21 @@ if not Extrascore? and jQuery? and _?
                   overflow: 'auto'
             o.hide()
             o.$container.find('> div')
-              .attr(
-                id: 'js-pop-up-table'
-              ).css
+              .attr(id: 'js-pop-up-table')
+              .css
                 display: 'table'
                 width: '100%'
                 height: '100%'
             o.$container.find('> div > div')
-              .attr(
-                id: 'js-pop-up-table-cell'
-              ).css
+              .attr(id: 'js-pop-up-table-cell')
+              .css
                 display: 'table-cell'
                 textAlign: 'center'
                 verticalAlign: 'middle'
             o.$div =
               o.$container.find('> div > div > div')
-                .attr(
-                  id: 'js-pop-up'
-                ).css
+                .attr(id: 'js-pop-up')
+                .css
                   display: 'inline-block'
                   position: 'relative'
             o.$container.on 'click', ->
@@ -316,8 +315,7 @@ if not Extrascore? and jQuery? and _?
           _.update()
           o.$container
             .stop()
-            .css(
-              display: 'block')
+            .css(display: 'block')
             .animate
               opacity: 1
             , opt.fadeDuration
@@ -348,35 +346,40 @@ if not Extrascore? and jQuery? and _?
               $q = $search.data 'search$Q'
               $results = $search.data 'search$Results'
               o.query $search if $q.is ':focus'
-              $search.hover(->
-                $search.data searchHover: true
-              , ->
-                $search.data searchHover: false
-                $results.css display: 'none' unless $q.is(':focus') or $search.data 'searchHoldHover'
-              ).mouseover ->
-                $search.data searchHoldHover: false
-              $q.blur(-> _.nextTick -> $results.css display: 'none' unless $search.data 'searchHover')
-              .focus(-> $search.data searchHoldHover: false)
-              .keydown((e) ->
-                switch e.keyCode
-                  when 13 then $search.find('.js-search-selected').click()
-                  when 38 then o.select $search, 'prev'
-                  when 40 then o.select $search, 'next'
-                  when 27
-                    if $q.val() is ''
-                      $q.blur()
-                      _.nextTick ->
-                        o.query $search
+              $search
+                .hover(->
+                  $search.data searchHover: true
+                , ->
+                  $search.data searchHover: false
+                  $results.css display: 'none' unless $q.is(':focus') or $search.data 'searchHoldHover'
+                )
+                .mouseover ->
+                  $search.data searchHoldHover: false
+              
+              $q
+                .blur(-> _.nextTick -> $results.css display: 'none' unless $search.data 'searchHover')
+                .focus(-> $search.data searchHoldHover: false)
+                .keydown((e) ->
+                  switch e.keyCode
+                    when 13 then $search.find('.js-search-selected').click()
+                    when 38 then o.select $search, 'prev'
+                    when 40 then o.select $search, 'next'
+                    when 27
+                      if $q.val() is ''
+                        $q.blur()
+                        _.nextTick ->
+                          o.query $search
+                      else
+                        _.nextTick ->
+                          $q.val ''
+                          o.query $search
                     else
-                      _.nextTick ->
-                        $q.val ''
-                        o.query $search
-                  else
-                    _.nextTick -> o.query $search if $q.is ':focus'
-                    return true
-                false
-              ).on 'focus keyup change', ->
-                o.query $search
+                      _.nextTick -> o.query $search if $q.is ':focus'
+                      return true
+                  false
+                )
+                .on 'focus keyup change', -> o.query $search
+              
               $results.on 'mouseenter click', '.js-search-result', (e) ->
                 $t = $ @
                 $results.find('.js-search-result.js-search-selected').removeClass 'js-search-selected'
@@ -456,7 +459,8 @@ if not Extrascore? and jQuery? and _?
             o = _.Search
             $search = $ @
             $page = $search.find('.js-search-page').eq $search.data 'searchPage'
-            $page.find('.js-search-result')[if dir is 'prev' then 'first' else 'last']().addClass 'js-search-selected' unless $page.find('.js-search-selected').removeClass('js-search-selected')[dir]().addClass('js-search-selected').length
+            unless $page.find('.js-search-selected').removeClass('js-search-selected')[dir]().addClass('js-search-selected').length
+              $page.find('.js-search-result')[if dir is 'prev' then 'first' else 'last']().addClass 'js-search-selected'
             if $page.find('.js-search-result.js-search-selected.js-search-prev').length
               o.page $search, $search.data('searchPage') - 1, true
             else if $page.find('.js-search-result.js-search-selected.js-search-next').length
@@ -473,26 +477,27 @@ if not Extrascore? and jQuery? and _?
         # Set mousemove on document to track coordinates
         load: ->
           o = _.Tooltip
-          $('body').mousemove((e) ->
-            o.mouse =
-              x: e.pageX
-              y: e.pageY
-            $('.js-tooltip').each ->
+          $('body')
+            .mousemove((e) ->
+              o.mouse =
+                x: e.pageX
+                y: e.pageY
+              $('.js-tooltip').each ->
+                $t = $ @
+                $t.data('tooltip$Div').css o.position($t).home if $t.data('tooltip$Div')? and $t.data('tooltipMouse')?
+            )
+            .on('mouseenter', '.js-tooltip:not([data-tooltip-no-hover])', ->
               $t = $ @
-              $t.data('tooltip$Div').css o.position($t).home if $t.data('tooltip$Div')? and $t.data('tooltipMouse')?
-          ).on('mouseenter', '.js-tooltip:not([data-tooltip-no-hover])', ->
-            $t = $ @
-            o.show $t
-            $t.data tooltipHover: true
-          ).on('mouseleave', '.js-tooltip:not([data-tooltip-no-hover])', ->
-            $t = $ @
-            $t.data tooltipHover: false
-            o.hide $t
-          ).on('focus', '.js-tooltip:input:not([data-tooltip-no-focus])', ->
-            o.show $ @
-          ).on('blur', '.js-tooltip:input:not([data-tooltip-no-focus])', ->
-            o.hide $ @
-          )
+              o.show $t
+              $t.data tooltipHover: true
+            )
+            .on('mouseleave', '.js-tooltip:not([data-tooltip-no-hover])', ->
+              $t = $ @
+              $t.data tooltipHover: false
+              o.hide $t
+            )
+            .on('focus', '.js-tooltip:input:not([data-tooltip-no-focus])', -> o.show $ @)
+            .on 'blur', '.js-tooltip:input:not([data-tooltip-no-focus])', -> o.hide $ @
         
         # Get the current tooltip$Div for an item or create a new one and return that
         divFor: ($t) ->
@@ -641,7 +646,8 @@ if not Extrascore? and jQuery? and _?
             .data(
               tooltipHover: false
               tooltipHoverableHover: false
-            ).removeClass('js-tooltip')
+            )
+            .removeClass('js-tooltip')
             .data('tooltip$Div')?.remove()
       
       # State manager
@@ -852,9 +858,9 @@ if not Extrascore? and jQuery? and _?
                     oldVal = model.get attr
                     newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
                     if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
-                      newVal = if !newVal then null else parseInt newVal
+                      newVal = if newVal then parseInt newVal else null
                     model.set attr, newVal
-                    model.save() if $t.data('linkerSave')? and oldVal isnt newVal
+                    model.save() if $t.data('linkerSave') and oldVal isnt newVal
                 model.on('change:' + attr, ->
                   oldVal = if $t.is ':checkbox' then $t.is ':checked' else $t[if $t.is ':input' then 'val' else 'text']()
                   newVal = model.get attr
