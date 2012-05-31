@@ -1,40 +1,44 @@
-###! Extrascore (requires jQuery and Underscore) by Casey Foster (caseywebdev.com) ###
+###!
+Extrascore (requires jQuery and Underscore)
+by Casey Foster (caseywebdev.com)
+###
 
 # Check dependencies
 if not Extrascore? and jQuery? and _?
-  
+
   # Use the jQuery shortcut
   $ = jQuery
-  
+
   # Define the Extrascore object
   window.Extrascore =
-    
+
     # Mixins for Underscore
     mixins:
-    
+
       # Mass method call for every child of obj
       mass: (key, obj, args...) ->
         for __, val of obj
           val?[key]? args...
-          
-      # Initialize an object by calling init on children and then assigning the load method to jQuery's DOM ready call
-      # This is a special _.mass() function
+
+      # Initialize an object by calling init on children and then assigning the
+      # load method to jQuery's DOM ready call This is a special _.mass()
+      # function
       init: (obj) ->
-        
+
         # Call on jQuery's DOM ready call
         load = (obj) ->
           _.mass 'load', obj
           _.update obj
-        
+
         # Call `init()` on all children of obj if the method exists
         _.mass 'init', obj
-        
+
         $ -> load obj
-      
+
       # This should be called after DOM changes that use a specific extension
       update: (obj) ->
         _.mass 'update', if obj? then obj else Extrascore.extensions
-        
+
       # Clean a string for use in a URL or query
       clean: (str, opt = {}) ->
         opt = _.extend
@@ -44,25 +48,27 @@ if not Extrascore? and jQuery? and _?
         , opt
         str = str+''
         str = str.toLowerCase() if opt.downcase
-        str = str.replace(/'/g, '').replace(/[^\w\s]|_/g, ' ') if opt.alphanumeric
+        if opt.alphanumeric
+          str = str.replace(/'/g, '').replace /[^\w\s]|_/g, ' '
         $.trim(str.replace /\s+/g, ' ').replace /\s/g, opt.delimiter
-      
-      # Shortcut for _.clean str, delimiter: '-', alphanumeric: true, downcase: true
+
+      # Shortcut for _.clean str, delimiter: '-', alphanumeric: true,
+      # downcase: true
       urlize: (str, delimiter = '-') ->
         _.clean str, delimiter: delimiter, alphanumeric: true, downcase: true
-      
+
       # This sucker comes in handy
       startsWith: (str, start) ->
         str = '' + str
         start = '' + start
         return start.length <= str.length and str.substr(0, start.length) is start
-      
+
       # This guy too
       endsWith: (str, end) ->
         str = '' + str
         end = '' + end
-        return end.length <= str.length and str.substr(str.length-end.length) is end      
-      
+        return end.length <= str.length and str.substr(str.length-end.length) is end
+
       # Sort an object by key for iteration
       sortByKey: (obj) ->
         newObj = {}
@@ -71,40 +77,42 @@ if not Extrascore? and jQuery? and _?
           .sortBy((val) -> val[0])
           .each (val) -> newObj[val[0]] = val[1]
         newObj
-      
-      # A quick zip to the top of the page, or optionally to an integer or jQuery object specified by `val`
+
+      # A quick zip to the top of the page, or optionally to an integer or
+      # jQuery object specified by `val`
       scrollTo: (val = 0, duration, callback) ->
         if val instanceof $
           val = val.offset().top
-        $(if $.browser.webkit then document.body else document.documentElement).animate scrollTop: val, duration, callback
-      
+        $(if $.browser.webkit then document.body else document.documentElement)
+          .animate scrollTop: val, duration, callback
+
       # Get a full URL from a relative url
       url: (path = '', protocol = location.protocol) ->
-        
+
         # Append a colon to the protocol if necessary
         protocol += ':' unless _.endsWith protocol, ':'
-        
+
         # See if it's already a URL
         unless path.match /^\w+:/
-        
+
           # See if it's a URL looking for a protocol
           if _.startsWith path, '//'
             path = location.protocol + path
-          
+
           # See if it's relative to the domain root
           else if _.startsWith path, '/'
             path = "#{location.protocol}//#{location.host + path}"
-            
+
           # Otherwise it must be relative to the current location
           else
             path = location.href + path
-        
+
         # Swap the protocols if necessary
         path.replace location.protocol, protocol
-      
+
       # The reverse of _.url()
       relativeUrl: (path = '') -> _.url(path).replace /^\w+:\/\/[^/]+/, ''
-        
+
       # Sometimes it's handy to know the size of the scrollbars in a browser
       scrollbarSize: (dimension = 'width') ->
         $out = $('<div><div/></div>')
@@ -122,7 +130,7 @@ if not Extrascore? and jQuery? and _?
         d2 = $in[dimension]()
         $out.remove()
         d1-d2
-      
+
       # Does the element have a scrollbar?
       hasScrollbar: ($obj) ->
         style = $obj.attr 'style'
@@ -133,7 +141,7 @@ if not Extrascore? and jQuery? and _?
         else
           $obj.removeAttr 'style'
         d1 isnt d2
-      
+
       # Break a query up into components if colons are used, otherwise just return the cleaned string
       parseQuery: (str, downcase = true) ->
         str = _.clean str, downcase: downcase
@@ -149,19 +157,19 @@ if not Extrascore? and jQuery? and _?
               terms[prev] = (if terms[prev] then terms[prev]+' ' else '')+match[2]
           return terms
         str
-      
+
       # Ghetto nextTick
       nextTick: (fn) -> setTimeout fn, 0
-      
+
     # Extensions for Underscore (more of individual classes using Underscore for the namespace then actual extentions)
     extensions:
-      
+
       # Placeholder for lame browsers
       Placeholder:
-        
+
         # After the DOM is loaded
         load: ->
-          
+
           # Hijack jQuery's .val() so it will return an empty string if Placeholder says it should
           val = $.fn.val
           $.fn.val = (str) ->
@@ -182,7 +190,7 @@ if not Extrascore? and jQuery? and _?
               $t
             else
               if $t.data 'placeholderEmpty' then '' else val.call $t
-                  
+
         # Check for new inputs or textareas than need to be initialized with Placeholder
         update: ->
           $('.js-placeholder, .js-placeholder-password').each ->
@@ -208,23 +216,23 @@ if not Extrascore? and jQuery? and _?
                   .blur ->
                     _.nextTick ->
                       $t.val '' unless $t.val()
-              
+
       # Multipurpose PopUp
       PopUp:
-        
+
         # Duration and Fade duration default, feel free to change
         DURATION: 0
         FADE_DURATION: 250
-        
+
         outside: true
-        
+
         # Build the PopUp element
         build: ->
-        
+
           # Shortcut
           o = _.PopUp;
           unless $('#js-pop-up-container').length
-            
+
             # Until 'display: box' becomes more widely available, we're stuck with table/table-cell
             $('body').append o.$container =
               $('<div><div><div><div/></div></div></div>')
@@ -272,7 +280,7 @@ if not Extrascore? and jQuery? and _?
                   when 27 then o.$div.find('.js-pop-up-esc').click()
                   else return true
                 false
-          
+
         # Fade the PopUp out
         hide: (fadeDuration) ->
           o = _.PopUp
@@ -289,11 +297,11 @@ if not Extrascore? and jQuery? and _?
                 else
                   $('body').removeAttr 'style'
                 o.saveBodyStyle = null
-          
+
         # Show the PopUp with the given `html`, optionally for a 'duration', with a 'callback', and/or with a 'fadeDuration'
         show: (htmlOrEl, opt = {}) ->
           o = _.PopUp
-          
+
           # Build the PopUp element
           o.build()
           opt = _.extend
@@ -304,7 +312,7 @@ if not Extrascore? and jQuery? and _?
           o.saveBodyStyle = $('body').attr 'style' unless o.$container.css('display') is 'block'
           $('body').css marginRight: _.scrollbarSize() if _.hasScrollbar $ 'body'
           $('body').css overflow: 'hidden'
-      
+
           $('body :focus').blur()
           o.fadeDuration = opt.fadeDuration
           o.$div.empty()
@@ -324,10 +332,10 @@ if not Extrascore? and jQuery? and _?
             o.hide()
             opt.callback?()
           , opt.duration if opt.duration
-      
+
       # Search (as you type)
       Search:
-        
+
         # Check for Search objects to be initialized
         update: ->
           $('.js-search').each ->
@@ -355,7 +363,7 @@ if not Extrascore? and jQuery? and _?
                 )
                 .mouseover ->
                   $search.data searchHoldHover: false
-              
+
               $q
                 .blur(-> _.nextTick -> $results.css display: 'none' unless $search.data 'searchHover')
                 .focus(-> $search.data searchHoldHover: false)
@@ -379,7 +387,7 @@ if not Extrascore? and jQuery? and _?
                   false
                 )
                 .on 'focus keyup change', -> o.query $search
-              
+
               $results.on 'mouseenter click', '.js-search-result', (e) ->
                 $t = $ @
                 $results.find('.js-search-result.js-search-selected').removeClass 'js-search-selected'
@@ -396,7 +404,7 @@ if not Extrascore? and jQuery? and _?
                   if $t.hasClass 'js-search-hide'
                     $q.blur()
                     $results.css display: 'none'
-        
+
         # Change the current search results page
         page: ($searches, n, prev) ->
           $searches.each ->
@@ -411,7 +419,7 @@ if not Extrascore? and jQuery? and _?
               .find('.js-search-result:not(.js-search-prev):not(.js-search-next)')[if prev then 'last' else 'first']()
               .addClass 'js-search-selected'
             $search.data 'searchPage', n
-        
+
         # Send the value of q to the correct search function and return the result to the correct callback
         query: ($searches, urlN = 1) ->
           $searches.each ->
@@ -452,7 +460,7 @@ if not Extrascore? and jQuery? and _?
                       $search.data searchAjax: $.getJSON($search.data("searchUrl#{if urlN is 1 then '' else urlN}"), q: q, handleData)
                   , $search.data('searchDelay') ? 0
             $search.data 'searchLastQ', q
-        
+
         # Select the next or previous in a list of results
         select: ($searches, dir) ->
           $searches.each ->
@@ -465,15 +473,15 @@ if not Extrascore? and jQuery? and _?
               o.page $search, $search.data('searchPage') - 1, true
             else if $page.find('.js-search-result.js-search-selected.js-search-next').length
               o.page $search, $search.data('searchPage') + 1
-           
+
       # Yay tooltips!
       Tooltip:
-        
+
         # Store mouse coordinates
         mouse:
           x: 0
           y: 0
-      
+
         # Set mousemove on document to track coordinates
         load: ->
           o = _.Tooltip
@@ -498,7 +506,7 @@ if not Extrascore? and jQuery? and _?
             )
             .on('focus', '.js-tooltip:input:not([data-tooltip-no-focus])', -> o.show $ @)
             .on 'blur', '.js-tooltip:input:not([data-tooltip-no-focus])', -> o.hide $ @
-        
+
         # Get the current tooltip$Div for an item or create a new one and return that
         divFor: ($t) ->
           o = _.Tooltip
@@ -530,7 +538,7 @@ if not Extrascore? and jQuery? and _?
               .css(position.home)
               .find('> div')
               .css _.extend {opacity: 0}, position.away
-            
+
             # If the tooltip is 'hoverable' (aka it should stay while the mouse is over the tooltip itself)
             if $t.data('tooltipHoverable')?
               $div.hover ->
@@ -540,7 +548,7 @@ if not Extrascore? and jQuery? and _?
                 $t.data tooltipHoverableHover: false
                 _.Tooltip.hide $t
             else
-            
+
               # Otherwise turn off interaction with the mouse
               $div.css
                 pointerEvents: 'none'
@@ -548,7 +556,7 @@ if not Extrascore? and jQuery? and _?
                 '-moz-user-select': 'none'
                 userSelect: 'none'
           $t.data 'tooltip$Div'
-                             
+
         # Show the tooltip if it's not already visible
         show: ($t) ->
           o = _.Tooltip
@@ -567,7 +575,7 @@ if not Extrascore? and jQuery? and _?
                 top: 0
                 left: 0
               , $t.data 'tooltipDuration'
-        
+
         # Hide the tooltip if it's not already hidden
         hide: ($t) ->
           o = _.Tooltip
@@ -585,7 +593,7 @@ if not Extrascore? and jQuery? and _?
                   complete: ->
                     $t.data tooltip$Div: null
                     $(@).parent().remove()
-        
+
         # Method for getting the correct CSS position data for a tooltip
         position: ($t) ->
           o = _.Tooltip
@@ -628,7 +636,7 @@ if not Extrascore? and jQuery? and _?
               home.top += (tHeight - divHeight)/2
               away.left = -offset
           {home: home, away: away}
-        
+
         # Use this to correct the tooltip content and positioning between events if necessary
         correct: ($t) ->
           o = _.Tooltip
@@ -639,7 +647,7 @@ if not Extrascore? and jQuery? and _?
             else
               $div.find('> div').html($t.data 'tooltipHtml')
               $div.css _.Tooltip.position($t).home
-        
+
         # Use this to remove a tooltip
         remove: ($t) ->
           $t
@@ -649,24 +657,24 @@ if not Extrascore? and jQuery? and _?
             )
             .removeClass('js-tooltip')
             .data('tooltip$Div')?.remove()
-      
+
       # State manager
       State:
-      
+
         # Header to send with the XHR
         HEADER: 'X-Chromeless'
-        
+
         xhr: {}
         cache: {}
-        
+
         # The attributes below are optional and can be set at runtime as needed
-        
+
         # When true, forces State to reload the page on the next request.
         # refresh: false
-        
+
         # Specify data to send with the XHR request
         data : {}
-        
+
         load: ->
           o = _.State
           if history.state?
@@ -680,7 +688,7 @@ if not Extrascore? and jQuery? and _?
             $t = $ @
             o.push (if $t.data 'stateUrl' then $t.data 'stateUrl' else $t.attr 'href'), $t.data 'stateProtocol'
             false
-        
+
         set: (obj, url = location.href) ->
           o = _.State
           url = _.url url
@@ -688,17 +696,17 @@ if not Extrascore? and jQuery? and _?
             _.extend o.cache[url], obj
           else
             o.cache[url] = obj
-        
+
         # Get a copy of the current url's cache
         get: (key, url = location.href) ->
           _.State.cache[_.url url][key]
-        
+
         reset: (url = location.href) ->
           delete _.State.cache[_.url url]
-        
+
         resetAll: ->
           _.State.cache = {}
-        
+
         push: (url, protocol = location.protocol) ->
           o = _.State
           url = _.url url, protocol
@@ -722,7 +730,7 @@ if not Extrascore? and jQuery? and _?
                         valid = true if s
                       else unless valid?
                         valid = false
-                  url = selectors['#chromeless-request-url'] if selectors['#chromeless-request-url']? and selectors['#chromeless-request-url'] isnt url
+                  url = reqUrl if reqUrl = selectors['#chromeless-request-url']
                   if valid
                     o.set selectors, url
                     o.after o.cache[url], url
@@ -733,51 +741,69 @@ if not Extrascore? and jQuery? and _?
                 error: -> location.assign url
           else unless o.cache[url]?.soft
             location.assign url
+
         change: (url) ->
           o = _.State
-          history[if o.cache[url].replace then 'replaceState' else 'pushState'] true, null, url if location.href isnt url
-          o.parse o.cache[url], url
+          data = o.cache[url]
+          action = if data.replace then 'replaceState' else 'pushState'
+          history[action] true, null, url if location.href isnt url
+          o.parse data, url
           _.update()
+
         clear: ->
+
         before: ->
+
         after: ->
+
         parse: ->
-      
+
       # Load images only when they're on the page or about to be on it
       Lazy:
-      
-        # Default tolerance, can be overidden here or with data-tolerance='xxx'
+
+        # Default tolerance, can be overidden here or with `data-lazy-
+        # tolerance='xxx'` or `$.data lazyTolerance: xxx` on individual
+        # elements
         TOLERANCE: 100
-        
+
         # After the DOM is ready
         load: ->
-          o = _.Lazy
-          $(window).on 'scroll resize', o.update
-                    
+          $(window).on 'scroll resize', _.Lazy.update
+
         # Check for new lazy images
         update: ->
-                    
-          # Wait for the browser to position the element on the page before checking its coordinates
+
+          # Wait for the browser to position the element on the page before
+          # checking its coordinates
           _.nextTick ->
             $('img.js-lazy').each ->
               $t = $ @
               visible = _.reduce $t.parents(), (memo, parent) ->
-                memo and $(parent).css('display') isnt 'none' and $(parent).css('visibility') isnt 'hidden'
+                memo and $(parent).css('display') isnt 'none' and
+                  $(parent).css('visibility') isnt 'hidden'
               , true
-              if visible and $(window).scrollTop() + $(window).outerHeight() >= $t.offset().top - ($t.data('lazyTolerance') ? _.Lazy.TOLERANCE)
+              fold = $(window).scrollTop() + $(window).outerHeight()
+              tolerance = $t.data('lazyTolerance') ? _.Lazy.TOLERANCE
+              showLine = $t.offset().top - tolerance
+              if visible and fold >= showLine
                 url = $t.data 'lazyUrl'
                 $t.removeClass('js-lazy').attr 'src', url
-      
-      # Everyone's favorite cheat code        
-      Konami: (callback, onlyOnce = false, code = '38,38,40,40,37,39,37,39,66,65,13', touchCode = 'up,up,down,down,left,right,left,right,tap,tap,tap') ->
+
+      # Everyone's favorite cheat code
+      Konami: (callback, opt = {}) ->
+        opt = _.extend
+          onlyOnce: false
+          code: '38,38,40,40,37,39,37,39,66,65,13'
+          touchCode: 'up,up,down,down,left,right,left,right,tap,tap,tap'
+        , opt
         keysPressed = []
         touchEvents = []
         tap = false
         startX = startY = dX = dY = 0
         keyDownEvent = (e) ->
           keysPressed.push e.keyCode
-          if _.endsWith keysPressed + '', code
-            $(document).off 'keydown', keyDownEvent if onlyOnce
+          if _.endsWith keysPressed + '', opt.code
+            $(document).off 'keydown', keyDownEvent if opt.onlyOnce
             keysPressed = []
             e.preventDefault()
             callback()
@@ -805,8 +831,8 @@ if not Extrascore? and jQuery? and _?
             touchEvents.push 'tap'
             checkEvents e
         checkEvents = (e) ->
-          if _.endsWith touchEvents + '', touchCode
-            if onlyOnce
+          if _.endsWith touchEvents + '', opt.touchCode
+            if opt.onlyOnce
               $(document).off 'touchmove', touchMoveEvent
               $(document).off 'touchend', touchEndEvent
             touchEvents = []
@@ -816,7 +842,7 @@ if not Extrascore? and jQuery? and _?
         $(document).on 'touchstart', touchStartEvent
         $(document).on 'touchmove', touchMoveEvent
         $(document).on 'touchend', touchEndEvent
-        
+
       # Making Cookie management easy on you
       Cookie: (name, val, opt = {}) ->
         if typeof name is 'object'
@@ -825,50 +851,62 @@ if not Extrascore? and jQuery? and _?
           opt.expires = -1 if val is null
           val ||= ''
           params = []
-          params.push "; Expires=#{if opt.expires.toGMTString? then opt.expires.toGMTString() else new Date(new Date().getTime()+opt.expires*1000*60*60*24).toGMTString()}" if opt.expires
+          params.push "; Expires=#{
+            if opt.expires.toGMTString?
+            then opt.expires.toGMTString()
+            else new Date(
+              new Date().getTime() + opt.expires*1000*60*60*24
+            ).toGMTString()
+          }" if opt.expires
           params.push "; Path=#{opt.path}" if opt.path
           params.push "; Domain=#{opt.domain}" if opt.domain
           params.push '; HttpOnly' if opt.httpOnly
           params.push '; Secure' if opt.secure
-          document.cookie = "#{encodeURIComponent name}=#{encodeURIComponent val}#{params.join ''}"
+          encodeName = encodeURIComponent name
+          encodeVal = encodeURIComponent val
+          document.cookie = "#{encodeName}=#{encodeVal}#{params.join ''}"
         else
           cookies = {}
           if document.cookie
-            _.each decodeURIComponent(document.cookie).split(/\s*;\s*/), (cookie) ->
+            rawCookies = decodeURIComponent(document.cookie).split /\s*;\s*/
+            _.each rawCookies, (cookie) ->
               {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
               if typeof name is 'string' and name is n
                 return v
               else if not name?
                 cookies[n] = v
           if not name then cookies else null
-                
+
     # jQuery plugins
     plugins:
-      
+
       # A backbone UI/model sync'r
       backboneLink: (model, opt = {}) ->
         $(@).each ->
-          (if (check = $(@).find '[data-backbone-link-attr]').length then check else $ @).each ->
+          check = $(@).find '[data-backbone-link-attr]'
+          (if check.length then check else $ @).each ->
             $t = $ @
             $t.backboneUnlink()
             $t.data backboneLinkModel: model
             attr = $t.data('backboneLinkAttr') or opt.attr
             save = $t.data('backboneLinkSave') ? (opt.save ? true)
-            
+            checkbox = $t.is ':checkbox'
+
             # Define callback functions
             $t.data
               backboneLinkInputChange: ->
                 oldVal = model.get attr
-                newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
-                if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
+                newVal = if checkbox then $t.is ':checked' else $t.val()
+                if attr is 'id' or
+                    _.endsWith(attr, '_id') or
+                    _.endsWith(attr, 'Id')
                   newVal = if newVal then parseInt newVal else null
                 model.set attr, if newVal is '' then null else newVal
                 model.save() if save and newVal isnt oldVal
-            
+
             $t.data
               backboneLinkModelChange: ->
                 valOrText = if $t.is ':input' then 'val' else 'text'
-                checkbox = $t.is ':checkbox'
                 oldVal = if checkbox then $t.is ':checked' else $t[valOrText]()
                 newVal = model.get attr
                 newVal = if newVal is null then '' else newVal
@@ -877,15 +915,15 @@ if not Extrascore? and jQuery? and _?
                     $t.prop checked: not not newVal
                   else
                     $t[valOrText] newVal
-            
+
             # Bind change events
             $t.on 'change', $t.data 'backboneLinkInputChange' if $t.is ':input'
-            
+
             # Bind and trigger the model change to update the element right now
             model
               .on("change:#{attr}", $t.data('backboneLinkModelChange'), @)
               .trigger "change:#{attr}"
-      
+
       # Remove the link to a backbone model
       backboneUnlink: ->
         $(@).each ->
@@ -894,13 +932,13 @@ if not Extrascore? and jQuery? and _?
           if model
             $t.off 'change', $t.data 'backboneLinkInputChange'
             model.off null, $t.data 'backboneLinkModelChange'
-      
+
   # Mixin the Extrascore Mixins
   _.mixin Extrascore.mixins
-  
+
   # Extend the Extrascore Extensions
   _.extend _, Extrascore.extensions
-  
+
   # Plugin the jQuery Plugins
   _.extend $.fn, Extrascore.plugins
 
