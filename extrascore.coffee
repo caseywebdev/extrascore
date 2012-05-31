@@ -163,36 +163,35 @@ if not Extrascore? and jQuery? and _?
         load: ->
           
           # Hijack jQuery's .val() so it will return an empty string if Placeholder says it should
-          $.fn._val = $.fn.val
+          val = $.fn.val
           $.fn.val = (str) ->
             $t = $ @
             if str?
               str = '' + str
               if $t.is('.js-placeholder, .js-placeholder-password') and not $t.is ':focus'
                 if str
-                  $t._val str
+                  val.call $t, str
                   $t[0].type = 'password' if $t.hasClass 'js-placeholder-password'
                   $t.data placeholderEmpty: false
                 else
                   $t.data placeholderEmpty: true
-                  $t._val $t.data 'placeholderText'
+                  val.call $t, $t.data 'placeholderText'
                   $t[0].type = 'text' if $t.hasClass 'js-placeholder-password'
               else
-                $t._val str
+                val.call $t, str
               $t
             else
-              if $t.data 'placeholderEmpty' then '' else $t._val()
+              if $t.data 'placeholderEmpty' then '' else val.call $t
                   
         # Check for new inputs or textareas than need to be initialized with Placeholder
         update: ->
-          
           $('.js-placeholder, .js-placeholder-password').each ->
             $t = $ @
-            if $t.data('placeholderText')? and not $t.data('placeholderEmpty')?
+            if $t.data('placeholderText')? and not $t.attr('placeholder')
               password = $t.hasClass 'js-placeholder-password'
               placeholderText = $t.data 'placeholderText'
               $t[0].type = 'password' if password
-              unless password and $.browser.msie and $.browser.version.split('.') < 9
+              unless password and $.browser.msie and $.browser.version.split('.')[0] < 9
                 $t.data placeholderEmpty: false
                 $t.val '' if not $t.val() or $t.val() is placeholderText
                 $t
@@ -202,13 +201,14 @@ if not Extrascore? and jQuery? and _?
                   )
                   .focus(->
                     _.nextTick ->
+                      $t[0].type = 'password' if password
                       $t.val '' if $t.data 'placeholderEmpty'
                       $t.data placeholderEmpty: false
                   )
                   .blur ->
                     _.nextTick ->
                       $t.val '' unless $t.val()
-      
+              
       # Multipurpose PopUp
       PopUp:
         
@@ -841,40 +841,60 @@ if not Extrascore? and jQuery? and _?
               else if not name?
                 cookies[n] = v
           if not name then cookies else null
+                
+    # jQuery plugins
+    plugins:
       
       # A backbone UI/model sync'r
-      Linker:
-        
-        update: ->
-          $('.js-linker').each ->
+      backboneLink: (model, opt = {}) ->
+        $(@).each ->
+          (if (check = $(@).find '[data-backbone-link-attr]').length then check else $ @).each ->
             $t = $ @
-            unless $t.data 'linkerLinked'
-              model = $t.data 'linkerModel'
-              model = eval model if typeof model is 'string'
-              attr = $t.data 'linkerAttr'
-              if model instanceof Backbone.Model and attr
-                if $t.is ':input'
-                  $t.on 'change', ->
-                    oldVal = model.get attr
-                    newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
-                    if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
-                      newVal = if newVal then parseInt newVal else null
-                    model.set attr, newVal
-                    model.save() if $t.data('linkerSave') and oldVal isnt newVal
-                model.on('change:' + attr, ->
-                  oldVal = if $t.is ':checkbox' then $t.is ':checked' else $t[if $t.is ':input' then 'val' else 'text']()
-                  newVal = model.get attr
-                  if oldVal isnt newVal
-                    if $t.is ':checkbox'
-                      $t.prop checked: newVal
-                    else
-                      $t[if $t.is ':input' then 'val' else 'text'] newVal
-                ).trigger 'change:' + attr
-                $t.data linkerLinked: true
+            $t.backboneUnlink()
+            $t.data backboneLinkModel: model
+            attr = $t.data('backboneLinkAttr') or opt.attr
+            save = $t.data('backboneLinkSave') ? (opt.save ? true)
+            
+            # Define callback functions
+            $t.data
+              backboneLinkInputChange: ->
+                oldVal = model.get attr
+                newVal = if $t.is ':checkbox' then $t.is ':checked' else $t.val()
+                if attr is 'id' or _.endsWith(attr, '_id') or _.endsWith(attr, 'Id')
+                  newVal = if newVal then parseInt newVal else null
+                model.set attr, if newVal is '' then null else newVal
+                model.save() if save and newVal isnt oldVal
+            
+            $t.data
+              backboneLinkModelChange: ->
+                valOrText = if $t.is ':input' then 'val' else 'text'
+                checkbox = $t.is ':checkbox'
+                oldVal = if checkbox then $t.is ':checked' else $t[valOrText]()
+                newVal = model.get attr
+                newVal = if newVal is null then '' else newVal
+                if newVal isnt oldVal
+                  if checkbox
+                    $t.prop checked: not not newVal
+                  else
+                    $t[valOrText] newVal
+            
+            # Bind change events
+            $t.on 'change', $t.data 'backboneLinkInputChange' if $t.is ':input'
+            
+            # Bind and trigger the model change to update the element right now
+            model
+              .on("change:#{attr}", $t.data('backboneLinkModelChange'), @)
+              .trigger "change:#{attr}"
       
-    # jQuery plugins
-    plugins: {}
-
+      # Remove the link to a backbone model
+      backboneUnlink: ->
+        $(@).each ->
+          $t = $ @
+          model = $t.data 'backboneLinkModel'
+          if model
+            $t.off 'change', $t.data 'backboneLinkInputChange'
+            model.off null, $t.data 'backboneLinkModelChange'
+      
   # Mixin the Extrascore Mixins
   _.mixin Extrascore.mixins
   
