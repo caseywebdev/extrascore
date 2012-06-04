@@ -707,6 +707,11 @@ if not Extrascore? and jQuery? and _?
         resetAll: ->
           _.State.cache = {}
 
+        unescapeScripts: (html) ->
+          scriptPattern = /<script([\s\S]*?)>([\s\S]*?)<\/script>/g
+          html.replace scriptPattern, ($0, $1, $2) ->
+            "<script#{$1}>#{$('<div>').html($2).text()}</script>"
+
         push: (url, protocol = location.protocol) ->
           o = _.State
           url = _.url url, protocol
@@ -722,11 +727,13 @@ if not Extrascore? and jQuery? and _?
                 success: (data) ->
                   valid = null
                   selectors = {}
-                  $(data.replace /<(\/)?script>/gi, '<!--$1state-script-->').each ->
+                  $(data.replace /script/gi, 'save-state-script').each ->
                     $t = $ @
                     unless $t[0] instanceof Text
                       if (s = $t.attr 'id') or $t.is 'title'
-                        selectors[s and "##{s}" or 'title'] = $t.html().replace /<!--(\/)?state-script-->/g, '<$1script>'
+                        selectors[s and "##{s}" or 'title'] = o
+                          .unescapeScripts $t.html()
+                            .replace(/save-state-script/g, 'script')
                         valid = true if s
                       else unless valid?
                         valid = false
