@@ -854,6 +854,7 @@ if not Extrascore? and jQuery? and _?
       Cookie: (name, val, opt = {}) ->
         if typeof name is 'object'
           _.Cookie n, v, val for n, v of name
+          _.Cookie()
         else if typeof name is 'string' and val isnt undefined
           opt.expires = -1 if val is null
           val ||= ''
@@ -872,6 +873,7 @@ if not Extrascore? and jQuery? and _?
           encodeName = encodeURIComponent name
           encodeVal = encodeURIComponent val
           document.cookie = "#{encodeName}=#{encodeVal}#{params.join ''}"
+          _.Cookie()
         else
           cookies = {}
           if document.cookie

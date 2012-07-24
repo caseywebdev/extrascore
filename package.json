@@ -1,0 +1,18 @@
+{
+  "name": "extrascore",
+  "version": "0.0.1",
+  "author": "Casey Foster <casey@caseywebdev.com>",
+  "licence": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/caseywebdev/extrascore.git"
+  },
+  "dependencies": {
+    "coffee-script": "x",
+    "uglify-js": "x"
+  },
+  "engines": {
+    "node": "x",
+    "npm": "x"
+  }
+}
