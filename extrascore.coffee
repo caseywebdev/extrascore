@@ -876,7 +876,7 @@ if not Extrascore? and jQuery? and _?
           cookies = {}
           if document.cookie
             rawCookies = decodeURIComponent(document.cookie).split /\s*;\s*/
-            _.each rawCookies, (cookie) ->
+            for cookie in rawCookies
               {1: n, 2: v} = /^([^=]*)\s*=\s*(.*)$/.exec cookie
               if typeof name is 'string' and name is n
                 return v
